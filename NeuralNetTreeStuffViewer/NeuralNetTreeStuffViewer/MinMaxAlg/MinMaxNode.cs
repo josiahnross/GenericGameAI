@@ -121,7 +121,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
             info.Children = new List<DebugInfo>(Children.Count);
             info.MinimumParentMinMaxValue = MinimumParentMinMaxValue;
             info.MaximumParentMinMaxValue = MaximumParentMinMaxValue;
-            info.Board = CurrentState.ToString();
+            info.Board = CurrentState.Game.ToString();
             info.BoardName = typeof(T).Name;
             foreach (var c in Children)
             {

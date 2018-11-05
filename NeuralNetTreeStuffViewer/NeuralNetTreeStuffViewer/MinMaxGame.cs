@@ -10,6 +10,7 @@ namespace NeuralNetTreeStuffViewer
 {
     public class MinMaxGame : ITurnBasedGame<MinMaxGame, bool>
     {
+        public MinMaxGame Game { get { return this; } }
         public int MinIndex { get; private set;}
         public int MaxIndex { get; private set; }
         public int Depth { get; private set; }
@@ -243,6 +244,11 @@ namespace NeuralNetTreeStuffViewer
                 return 1;
             }
             return 0;
+        }
+
+        public void EnableDisplay(bool enable)
+        {
+            throw new NotImplementedException();
         }
     }
 }

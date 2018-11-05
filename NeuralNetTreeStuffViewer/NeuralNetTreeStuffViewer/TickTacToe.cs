@@ -11,6 +11,9 @@ namespace NeuralNetTreeStuffViewer
     {
         int boardSize;
         public My2dArray<Players> board { get; private set; }
+
+        public TickTacToe Game { get { return this; } }
+
         int placesRemaining;
         public event EventHandler<GameButtonArgs<(GameMove<BoardPosition> move, bool done)>> MoveMade;
         protected TickTacToe(TickTacToe game)
@@ -208,6 +211,16 @@ namespace NeuralNetTreeStuffViewer
             }
         }
 
+        public async void EnableDisplay(bool enable)
+        {
+            await Task.Run(() =>
+            {
+                foreach (var button in displayButtons.Values)
+                {
+                    button.Invoke(new MethodInvoker(() => button.Enabled = enable));
+                }
+            });
+        }
 
         private void NewButton_Click(object sender, GameButtonArgs<BoardPosition> e)
         {
@@ -275,5 +288,6 @@ namespace NeuralNetTreeStuffViewer
         {
             return move.Y * boardSize + move.X;
         }
+
     }
 }

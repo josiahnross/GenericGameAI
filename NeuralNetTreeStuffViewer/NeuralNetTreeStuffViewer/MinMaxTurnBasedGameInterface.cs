@@ -15,6 +15,7 @@ namespace NeuralNetTreeStuffViewer
         public bool AiFirst { get; private set; }
         public string DebugStringPath { get; set; }
         public ITurnBasedGame<T, T1> Game { get; }
+        public ITurnBasedGame<T, T1> DisplayGame { get; }
         public uint MakeMoveMinMaxDepth { get; set; }
         public IEvaulator<T, T1> Evaulator { get; private set; }
 
@@ -29,7 +30,7 @@ namespace NeuralNetTreeStuffViewer
             MakeMoveMinMaxDepth = gameInterface.MakeMoveMinMaxDepth;
         }
 
-        public MinMaxTurnBasedGameInterface(T game, bool aiFirst, IEvaulator<T, T1> evaulator, uint makeMoveMinMaxDepth = 5, string debugStringPath = null)
+        public MinMaxTurnBasedGameInterface(T game, T displayGame, bool aiFirst, IEvaulator<T, T1> evaulator, uint makeMoveMinMaxDepth = 5, string debugStringPath = null)
         {
             Evaulator = evaulator;
             Evaulator?.Init(game, aiFirst);
@@ -40,7 +41,11 @@ namespace NeuralNetTreeStuffViewer
             Game = game;
             MakeMoveMinMaxDepth = makeMoveMinMaxDepth;
 
-            game.MoveMade += MoveMadeAndResponse;
+            DisplayGame = displayGame;
+            if (displayGame != null)
+            {
+                DisplayGame.MoveMade += MoveMadeAndResponse;
+            }
             if (AiFirst)
             {
                 AIMakeMove();
@@ -61,14 +66,16 @@ namespace NeuralNetTreeStuffViewer
                 {
                     int moveIndex = Game.GetMoveUniqueIdentifier(e.Info.move.Move);
                     MakeMove(e.Info.move, moveIndex);
+                    DisplayGame.EnableDisplay(false);
                     AIMakeMove();
+                    DisplayGame.EnableDisplay(true);
                 }
             });
         }
 
         T1? AIMakeMove()
         {
-            if (Game != null)
+            if (DisplayGame != null)
             {
                 var node = MinMaxAlgorithm<T, T1>.EvaluateMoves(MakeMoveMinMaxDepth, this, AiFirst);
                 MinMaxNode<T, T1> nextMoveChild = null;
@@ -123,12 +130,12 @@ namespace NeuralNetTreeStuffViewer
         public void MakeMoveOnGame(GameMove<T1> move, int moveIndex)
         {
             MakeMove(move, moveIndex);
-            Game.ComputerMakeMove(move.Move);
+            DisplayGame.ComputerMakeMove(move.Move);
         }
         public void MakeMove(GameMove<T1> move, int moveIndex)
         {
             Evaulator?.MakeMove(move, moveIndex);
-            //Game.ComputerMakeMove(move.Move);
+            Game.MakeMove(move);
         }
     }
 

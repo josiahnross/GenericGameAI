@@ -12,6 +12,9 @@ namespace NeuralNetTreeStuffViewer
     {
         public int Width { get; private set; }
         public int Height { get; private set; }
+
+        public ConnectFour Game { get { return this; } }
+
         My2dArray<Players> board;
         int[] columnHeights;
         int placesRemaining;
@@ -191,6 +194,16 @@ namespace NeuralNetTreeStuffViewer
                     newButton.Click += NewButton_Click;
                 }
             }
+        }
+        public async void EnableDisplay(bool enable)
+        {
+            await Task.Run(() =>
+            {
+                foreach (var button in displayButtons.Values)
+                {
+                    button.Invoke(new MethodInvoker(() => button.Enabled = enable));
+                }
+            });
         }
 
         private async void NewButton_Click(object sender, GameButtonArgs<BoardPosition> e)

@@ -1,4 +1,5 @@
 ﻿using NeuralNetTreeStuffViewer.MinMaxAlg;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -36,15 +37,15 @@ namespace NeuralNetTreeStuffViewer
             {
                 TickTacToe tickTacToe = new TickTacToe(3);
                 tickTacToe.DisplayGame(gamePanel);
-                ticTacToeEvaluator = new MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>(new TickTacToe(3), AIFirst,
+                ticTacToeEvaluator = new MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>(new TickTacToe(3), new TickTacToe(3), AIFirst,
                     new MonteCarloEvaluator<TickTacToe, BoardPosition>(MonteCarloTree<TickTacToe, BoardPosition>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100),
                     9, debugInfoPath);
             }
-            else if(false)
+            else if (false)
             {
                 ConnectFour connectFour = new ConnectFour(7, 6);
                 connectFour.DisplayGame(gamePanel);
-                connectFourEvaluator = new MinMaxTurnBasedGameInterface<ConnectFour, int>(connectFour, AIFirst,
+                connectFourEvaluator = new MinMaxTurnBasedGameInterface<ConnectFour, int>(new ConnectFour(7, 6), connectFour, AIFirst,
                     new MonteCarloEvaluator<ConnectFour, int>(MonteCarloTree<ConnectFour, int>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100),
                     3, debugInfoPath);
             }
@@ -52,9 +53,24 @@ namespace NeuralNetTreeStuffViewer
             {
                 Checkers checkers = new Checkers();
                 checkers.DisplayGame(gamePanel);
-                checkersEvaluator = new MinMaxTurnBasedGameInterface<Checkers, CheckersMove>(checkers, AIFirst,
-                    new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 25),
-                    6, debugInfoPath);
+                IEvaulator<Checkers, CheckersMove> eval;
+                uint minMaxDepth;
+                if(false)
+                {
+                    eval = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
+                    Math.Sqrt(2), RandomMoveSelectionFunc, 50, 25);
+                    minMaxDepth = 3;
+                }
+                else
+                {
+                    eval = new JustEvaluator<Checkers, CheckersMove>(g => g.Game.AmountOfFirstPlayerCheckers - g.Game.AmountOfSecondPlayerCheckers + ((g.Game.AmountOfFirstPlayerKings - g.Game.AmountOfSecondPlayerKings)*1.5f));
+                    minMaxDepth = 6;
+                }
+                if (true)
+                {
+                    checkersEvaluator = new MinMaxTurnBasedGameInterface<Checkers, CheckersMove>(new Checkers(), checkers, 
+                        AIFirst, eval, minMaxDepth, debugInfoPath);
+                }
             }
         }
 
@@ -84,7 +100,26 @@ namespace NeuralNetTreeStuffViewer
         private void testButton_Click(object sender, EventArgs e)
         {
         }
-        
-        
+
+
+    }
+    public static class Funcs
+    {
+        public static void WriteBoard(object o, string path)
+        {
+            File.WriteAllText(path, GetBoardInfoJson(o));
+        }
+        public static string GetBoardInfoJson(object o)
+        {
+            return GetBoardInfoJson(GetBoardInfo(o));
+        }
+        public static string GetBoardInfoJson(BoardInfo info)
+        {
+            return JsonConvert.SerializeObject(info);
+        }
+        public static BoardInfo GetBoardInfo(object o)
+        {
+            return new BoardInfo(o.ToString(), o.GetType().Name);
+        }
     }
 }

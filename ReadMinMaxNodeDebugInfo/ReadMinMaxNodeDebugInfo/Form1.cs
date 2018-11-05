@@ -14,14 +14,15 @@ namespace ReadMinMaxNodeDebugInfo
 {
     public partial class Form1 : Form
     {
-        Dictionary<string, (Action<DebugInfo> init, Action<DebugInfo, object> set)> debugInfoDisplayActions;
+        Dictionary<string, (Action<string> init, Action<string, object> set)> debugInfoDisplayActions;
         object actionInfo;
         public Form1()
         {
             InitializeComponent();
-            debugInfoDisplayActions = new Dictionary<string, (Action<DebugInfo> init, Action<DebugInfo, object> set)>();
+            debugInfoDisplayActions = new Dictionary<string, (Action<string> init, Action<string, object> set)>();
             debugInfoDisplayActions.Add("TickTacToe", (InitTickTacToeDisplay, TickTacToeDisplayAction));
             debugInfoDisplayActions.Add("ConnectFour", (InitConnectFourDisplay, ConnectFourDisplayAction));
+            debugInfoDisplayActions.Add("Checkers", (InitCheckersDisplay, CheckersDisplayAction));
         }
 
         Dictionary<TreeNode, DebugInfo> infos;
@@ -42,9 +43,9 @@ namespace ReadMinMaxNodeDebugInfo
             {
                 AddNodesToTree(n, c);
             }
-            if(debugInfoDisplayActions.ContainsKey(info.BoardName))
+            if (debugInfoDisplayActions.ContainsKey(info.BoardName))
             {
-                debugInfoDisplayActions[info.BoardName].init?.Invoke(info);
+                debugInfoDisplayActions[info.BoardName].init?.Invoke(info.Board);
             }
         }
 
@@ -70,12 +71,12 @@ namespace ReadMinMaxNodeDebugInfo
             var info = infos[node];
             if (debugInfoDisplayActions.ContainsKey(info.BoardName))
             {
-                debugInfoDisplayActions[info.BoardName].set?.Invoke(info, actionInfo);
+                debugInfoDisplayActions[info.BoardName].set?.Invoke(info.Board, actionInfo);
             }
         }
 
         #region TickTacToe
-        void InitTickTacToeDisplay(DebugInfo info)
+        void InitTickTacToeDisplay(string strBoard)
         {
             boardPanel.Controls.Clear();
             List<Button> buttons = new List<Button>();
@@ -95,9 +96,9 @@ namespace ReadMinMaxNodeDebugInfo
             actionInfo = buttons;
         }
 
-        void TickTacToeDisplayAction(DebugInfo info, object extraStuff)
+        void TickTacToeDisplayAction(string strBoard, object extraStuff)
         {
-            string[] board = info.Board.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] board = strBoard.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             List<Button> buttons = (List<Button>)extraStuff;
             for (int i = 0; i < board.Length; i++)
             {
@@ -116,12 +117,12 @@ namespace ReadMinMaxNodeDebugInfo
         #endregion
 
         #region ConnectFour
-        void InitConnectFourDisplay(DebugInfo info)
+        void InitConnectFourDisplay(string strBoard)
         {
             boardPanel.Controls.Clear();
             List<Button> buttons = new List<Button>();
 
-            string[] board = info.Board.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] board = strBoard.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             int width = int.Parse(board[0]);
             int height = int.Parse(board[1]);
             float sWidth = boardPanel.Size.Width / (float)width;
@@ -141,10 +142,10 @@ namespace ReadMinMaxNodeDebugInfo
             actionInfo = buttons;
         }
 
-        void ConnectFourDisplayAction(DebugInfo info, object extraStuff)
+        void ConnectFourDisplayAction(string strBoard, object extraStuff)
         {
             List<Button> buttons = (List<Button>)extraStuff;
-            string[] board = info.Board.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+            string[] board = strBoard.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             for (int i = 2; i < board.Length; i++)
             {
                 Color color = BackColor;
@@ -156,7 +157,74 @@ namespace ReadMinMaxNodeDebugInfo
                 {
                     color = Color.Red;
                 }
-                buttons[i-2].BackColor = color;
+                buttons[i - 2].BackColor = color;
+            }
+        }
+        #endregion
+
+        #region Checkers
+        void InitCheckersDisplay(string strBoard)
+        {
+            boardPanel.Controls.Clear();
+            List<Button> buttons = new List<Button>();
+            int size = Math.Min(boardPanel.Size.Width, boardPanel.Size.Height) / 8;
+            for (int x = 0; x < 8; x++)
+            {
+                for (int y = 7; y >= 0; y--)
+                {
+                    Button b = new Button();
+                    b.Size = new Size(size, size);
+                    b.Location = new Point(x * size, y * size);
+                    buttons.Add(b);
+                    boardPanel.Controls.Add(b);
+                    if (!(x % 2 == 1 ^ y % 2 == 1))
+                    {
+                        b.BackColor = Color.LightGray;
+                    }
+                    else
+                    {
+                        b.BackColor = Color.DarkGray;
+                    }
+                }
+            }
+
+            actionInfo = buttons;
+        }
+
+        void CheckersDisplayAction(string strBoard, object extraStuff)
+        {
+            string[] board = strBoard.Split(new char[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+            List<Button> buttons = (List<Button>)extraStuff;
+            for (int i = 0; i < board.Length; i++)
+            {
+                string[] piece = board[i].Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string txt = "";
+                Color color;
+                if (board[2] == "1")
+                {
+                    txt = "K";
+                }
+                if (piece[3] == "0")
+                {
+                    if (!((i%8) % 2 == 1 ^ (i/8) % 2 == 1))
+                    {
+                        color = Color.DarkGray;
+                    }
+                    else
+                    {
+                        color = Color.LightGray;
+                    }
+                }
+                else if (piece[3] == "1")
+                {
+                    color = Color.Blue;
+                }
+                else
+                {
+                    color = Color.Red;
+                }
+                buttons[i].BackColor = color;
+                buttons[i].Text = txt;
             }
         }
         #endregion
@@ -170,6 +238,35 @@ namespace ReadMinMaxNodeDebugInfo
         {
             string info = File.ReadAllText(openFileDialog1.FileName);
             LoadFromTxt(info);
+        }
+
+        private void justBoardButton_Click(object sender, EventArgs e)
+        {
+            LoadBoardFromTxt(textBox1.Text);
+        }
+
+        void LoadBoardFromTxt(string txt)
+        {
+            infos = new Dictionary<TreeNode, DebugInfo>();
+            treeView1.Nodes.Clear();
+
+            BoardInfo info = JsonConvert.DeserializeObject<BoardInfo>(txt);
+            if (debugInfoDisplayActions.ContainsKey(info.BoardName))
+            {
+                debugInfoDisplayActions[info.BoardName].init?.Invoke(info.Board);
+                debugInfoDisplayActions[info.BoardName].set?.Invoke(info.Board, actionInfo);
+            }
+        }
+
+        private void openJustBoardFile_Click(object sender, EventArgs e)
+        {
+            openFileDialog2.ShowDialog();
+        }
+
+        private void openFileDialog2_FileOk(object sender, CancelEventArgs e)
+        {
+            string info = File.ReadAllText(openFileDialog2.FileName);
+            LoadBoardFromTxt(info);
         }
     }
     public struct DebugInfo
@@ -205,5 +302,10 @@ namespace ReadMinMaxNodeDebugInfo
             s += "    MaxParent: " + MaximumParentMinMaxValue + "    MinParent: " + MinimumParentMinMaxValue + "    Children: " + Children.Count;
             return s;
         }
+    }
+    public struct BoardInfo
+    {
+        public string Board { get; set; }
+        public string BoardName { get; set; }
     }
 }

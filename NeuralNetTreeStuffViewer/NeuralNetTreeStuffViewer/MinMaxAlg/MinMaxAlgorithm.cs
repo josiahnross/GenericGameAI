@@ -33,12 +33,17 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
                     {
                         var childState = currentNode.CurrentState.CopyEInterface();
                         bool childMaxTurn = !currentNode.MaxTurn;
-                        childState.MakeMove(new GameMove<T1>(move.Value, childMaxTurn ? Players.YouOrFirst : Players.YouOrFirst), move.Key);
+                        childState.MakeMove(new GameMove<T1>(move.Value, childMaxTurn ? Players.OpponentOrSecond : Players.YouOrFirst), move.Key);
                         MinMaxNode<T, T1> childNode = new MinMaxNode<T, T1>(childMaxTurn, childState, currentNode, new MoveIndex<T1>(move.Key, move.Value));
 
                         currentNode.Children.Add(childNode);
                         //nodesToEvaluate.Enqueue((childNode, currentDepth +1));
-                        EvaluateMovesR(depth, currentDepth + 1, childNode);
+                        int newDepth = currentDepth;
+                        if (currentNode.AvailableMoves.Count > 1)
+                        {
+                            newDepth += 1;
+                        }
+                        EvaluateMovesR(depth, newDepth, childNode);
                     }
                 }
             }

@@ -10,8 +10,11 @@ namespace NeuralNetTreeStuffViewer
 {
     public class Checkers : ITurnBasedGame<Checkers, CheckersMove>
     {
+        public Checkers Game { get { return this; } }
         public int AmountOfFirstPlayerCheckers { get { return firstCheckers.Count; } }
         public int AmountOfSecondPlayerCheckers { get { return secondCheckers.Count; } }
+        public int AmountOfFirstPlayerKings { get; private set; }
+        public int AmountOfSecondPlayerKings { get; private set; }
         static My2dArray<CheckersPiece> startBoard;
         static Dictionary<bool, BoardPosition> frontDirections;
         My2dArray<CheckersPiece> board;
@@ -90,7 +93,7 @@ namespace NeuralNetTreeStuffViewer
             {
                 for (int y = 0; y < board.YLength; y++)
                 {
-                    board[x, y] = startBoard[x, y];
+                    board[x, y] = startBoard[x, y].Copy();
                     if (board[x, y].Player == Players.YouOrFirst)
                     {
                         firstCheckers.Add(board[x, y]);
@@ -119,6 +122,14 @@ namespace NeuralNetTreeStuffViewer
             board[move.Move.Position] = new CheckersPiece(Players.None, move.Move.Position);
             if ((newPos.Y == board.YLength - 1 && move.Player == Players.YouOrFirst) || (newPos.Y == 0 && move.Player == Players.OpponentOrSecond))
             {
+                if(move.Player == Players.YouOrFirst)
+                {
+                    AmountOfFirstPlayerKings++;
+                }
+                else
+                {
+                    AmountOfSecondPlayerKings++;
+                }
                 board[newPos].IsKing = true;
             }
             if (move.Move.Jump)
@@ -293,7 +304,7 @@ namespace NeuralNetTreeStuffViewer
             {
                 for (int x = 0; x < startBoard.XLength; x++)
                 {
-                    if ((y < 3 || startBoard.YLength - y <= 3) && y % 2 == 1 ^ x % 2 == 1)
+                    if ((y < 3 || startBoard.YLength - y <= 3) && !(y % 2 == 1 ^ x % 2 == 1))
                     {
                         if (y < 3)
                         {
@@ -344,6 +355,15 @@ namespace NeuralNetTreeStuffViewer
 
         public bool IsLegalMove(GameMove<CheckersMove> move)
         {
+            if (AvailableMoves(move.Player).ContainsKey(GetMoveUniqueIdentifier(move.Move)))
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+            /*
             if(move.Move.Pass)
             {
                 return true;
@@ -378,6 +398,7 @@ namespace NeuralNetTreeStuffViewer
                 }
             }
             return true;
+            */
         }
 
         public BoardState CheckBoardState(GameMove<CheckersMove> lastMove)
@@ -426,6 +447,17 @@ namespace NeuralNetTreeStuffViewer
                 }
             }
         }
+
+        public async void EnableDisplay(bool enable)
+        {
+            await Task.Run(() =>
+            {
+                foreach (var button in displayButtons.Values)
+                {
+                    button.Invoke(new MethodInvoker(() => button.Enabled = enable));
+                }
+            });
+        }
         public string GetButtonTxt(CheckersPiece piece)
         {
             return piece.IsKing ? "K" : "";
@@ -434,7 +466,7 @@ namespace NeuralNetTreeStuffViewer
         {
             if (player == Players.None)
             {
-                if (location.X % 2 == 1 ^ location.Y % 2 == 1)
+                if (!(location.X % 2 == 1 ^ location.Y % 2 == 1))
                 {
                     return Color.DarkGray;
                 }
@@ -611,6 +643,22 @@ namespace NeuralNetTreeStuffViewer
         {
             return move.GetUniqueIdentifier();
         }
+        public override string ToString()
+        {
+            string str = "";
+            for(int x = 0; x < board.XLength; x++)
+            {
+                for(int y = 0; y < board.YLength; y++)
+                {
+                    if(!(x == 0 && y == 0))
+                    {
+                        str += "-";
+                    }
+                    str += board[x, y].ToString();
+                }
+            }
+            return str;
+        }
     }
     public class CheckersPiece
     {
@@ -622,6 +670,16 @@ namespace NeuralNetTreeStuffViewer
             Position = position;
             IsKing = false;
             Player = player;
+        }
+        public override string ToString()
+        {
+            return Position.X + "," + Position.Y + "," + Convert.ToInt32(IsKing) + "," + (int)Player;
+        }
+        public CheckersPiece Copy()
+        {
+            var r = new CheckersPiece(Player, Position);
+            r.IsKing = IsKing;
+            return r;
         }
     }
     public struct CheckersMove
