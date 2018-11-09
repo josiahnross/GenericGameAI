@@ -21,7 +21,6 @@ namespace NeuralNetTreeStuffViewer
         {
             InitializeComponent();
         }
-        Random random;
         MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition> ticTacToeEvaluator;
         MinMaxTurnBasedGameInterface<ConnectFour, int> connectFourEvaluator;
         MinMaxTurnBasedGameInterface<Checkers, CheckersMove> checkersEvaluator;
@@ -31,7 +30,7 @@ namespace NeuralNetTreeStuffViewer
         bool AIFirst = false;
         private void Form1_Load(object sender, EventArgs e)
         {
-            random = new Random(1);
+            Funcs.Random = new Random(1);
 
             if (false)
             {
@@ -77,20 +76,20 @@ namespace NeuralNetTreeStuffViewer
 
         public int RandomMoveSelectionFunc(ITurnBasedGame<TickTacToe, BoardPosition> game, Dictionary<int, BoardPosition> avaialableMoves, Players player)
         {
-            return avaialableMoves.ElementAt(random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
+            return avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
         }
         public int RandomMoveSelectionFunc(ITurnBasedGame<ConnectFour, int> game, Dictionary<int, int> avaialableMoves, Players player)
         {
-            return avaialableMoves.ElementAt(random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
+            return avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
         }
         public int RandomMoveSelectionFunc(ITurnBasedGame<Checkers, CheckersMove> game, Dictionary<int, CheckersMove> avaialableMoves, Players player)
         {
-            return avaialableMoves.ElementAt(random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
+            return avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
         }
 
         double RandomFunc()
         {
-            return random.Next(0, 100);
+            return Funcs.Random.Next(0, 100);
         }
         int counter = 0;
         double CounterFunc()
@@ -106,6 +105,7 @@ namespace NeuralNetTreeStuffViewer
     }
     public static class Funcs
     {
+        public static Random Random { get; set; }
         public static void WriteBoard(object o, string path)
         {
             File.WriteAllText(path, GetBoardInfoJson(o));
@@ -121,6 +121,18 @@ namespace NeuralNetTreeStuffViewer
         public static BoardInfo GetBoardInfo(object o)
         {
             return new BoardInfo(o.ToString(), o.GetType().Name);
+        }
+        public static Players OppositePlayer(Players player)
+        {
+            if(player == Players.YouOrFirst)
+            {
+                return Players.OpponentOrSecond;
+            }
+            else if(player == Players.OpponentOrSecond)
+            {
+                return Players.YouOrFirst;
+            }
+            return Players.None;
         }
     }
 }

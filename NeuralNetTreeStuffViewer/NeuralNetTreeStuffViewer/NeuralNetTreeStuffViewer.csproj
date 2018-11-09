@@ -74,11 +74,11 @@
     <Compile Include="MinMaxEvaluator.cs" />
     <Compile Include="MinMaxGame.cs" />
     <Compile Include="MinMaxTurnBasedGameInterface.cs" />
-    <Compile Include="MonteCarloEvaluateableTurnBasedGame.cs" />
     <Compile Include="MonteCarloEvaluator.cs" />
     <Compile Include="MonteCarloNode.cs" />
     <Compile Include="MonteCarloTree.cs" />
     <Compile Include="My2dArray.cs" />
+    <Compile Include="NeuralNetGameTrainer.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TickTacToe.cs" />
