@@ -28,6 +28,8 @@ namespace NeuralNetTreeStuffViewer
         void ComputerMakeMove(T1 move);
         int GetMoveUniqueIdentifier(T1 move);
         event EventHandler<GameButtonArgs<(GameMove<T1> move, bool done)>> MoveMade;
+        double[] GetInputs(Players currentPlayer);
+        void InitializeStaticVariables();
     }
     public struct BoardInfo
     {

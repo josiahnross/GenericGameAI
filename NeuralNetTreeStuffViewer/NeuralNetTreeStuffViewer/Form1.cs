@@ -53,6 +53,7 @@ namespace NeuralNetTreeStuffViewer
             {
                 Checkers checkers = new Checkers();
                 checkers.DisplayGame(gamePanel);
+                checkers.GetInputs(Players.YouOrFirst);
                 IEvaulator<Checkers, CheckersMove> eval;
                 uint minMaxDepth;
                 if(false)
@@ -63,7 +64,7 @@ namespace NeuralNetTreeStuffViewer
                 }
                 else
                 {
-                    eval = new JustEvaluator<Checkers, CheckersMove>(g => g.Game.AmountOfFirstPlayerCheckers - g.Game.AmountOfSecondPlayerCheckers + ((g.Game.AmountOfFirstPlayerKings - g.Game.AmountOfSecondPlayerKings)*1.5f));
+                    eval = new JustEvaluator<Checkers, CheckersMove>(g => (g.Game.AmountOfFirstPlayerCheckers - g.Game.AmountOfSecondPlayerCheckers + ((g.Game.AmountOfFirstPlayerKings - g.Game.AmountOfSecondPlayerKings)*1.5f)));
                     minMaxDepth = 6;
                 }
                 if (true)

@@ -250,5 +250,15 @@ namespace NeuralNetTreeStuffViewer
         {
             throw new NotImplementedException();
         }
+
+        public double[] GetInputs(Players currentPlayer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void InitializeStaticVariables()
+        {
+            throw new NotImplementedException();
+        }
     }
 }

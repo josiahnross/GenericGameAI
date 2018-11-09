@@ -23,30 +23,34 @@ namespace NeuralNetTreeStuffViewer
             //allNodes = new List<MonteCarloNode<T, T1>>();
             //allNodes.Add(Root);
         }
-        public void RunMonteCarloSims(int amountOfSims, MonteCarloNode<T, T1> startNode = null)
+        public void RunMonteCarloSims(int amountOfSims, MonteCarloNode<T, T1> startNode = null, HashSet<MonteCarloNode<T,T1>> nodesSet = null)
         {
             if (startNode == null)
             {
                 startNode = Root;
             }
+            if(nodesSet != null && !nodesSet.Contains(Root))
+            {
+                nodesSet.Add(Root);
+            }
             bool player1Perspective = true;
             for (int i = 0; i < amountOfSims; i++)
             {
-                RunMonteCarloSim(startNode, player1Perspective);
+                RunMonteCarloSim(startNode, player1Perspective, nodesSet);
                 player1Perspective = !player1Perspective;
             }
         }
-        private void RunMonteCarloSim(MonteCarloNode<T, T1> node, bool player1Perspective)
+        private void RunMonteCarloSim(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet)
         {
             var newNode = Selection(node, player1Perspective);
             var contInfo = ContinueWithNode(newNode);
             if (contInfo.continueWithNode)
             {
-                newNode = Expansion(newNode, player1Perspective);
+                newNode = Expansion(newNode, player1Perspective, nodesSet);
                 contInfo = ContinueWithNode(newNode);
                 if (contInfo.continueWithNode && newNode.AvailableMoves.Count > 0 && !newNode.FullyExplored)
                 {
-                    var info = SimulationAndPartialBackprop(newNode, player1Perspective);
+                    var info = SimulationAndPartialBackprop(newNode, player1Perspective, nodesSet);
                     Backprop(newNode, info);
                 }
                 else
@@ -123,7 +127,7 @@ namespace NeuralNetTreeStuffViewer
             }
         }
 
-        private MonteCarloNode<T, T1> Expansion(MonteCarloNode<T, T1> node, bool player1Perspective)
+        private MonteCarloNode<T, T1> Expansion(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet)
         {
             List<int> availableMovesToRemove = new List<int>();
             foreach (var m in node.AvailableMoves)
@@ -135,7 +139,10 @@ namespace NeuralNetTreeStuffViewer
                     state.MakeMove(childMove);
                     Players childPlayer = GetOtherPlayer(node.Player);
                     var child = new MonteCarloNode<T, T1>(node, state, (m.Key, m.Value), childPlayer);
-                    //allNodes.Add(child);
+                    if (nodesSet != null)
+                    {
+                        nodesSet.Add(child);
+                    }
 
                     node.Children.Add(m.Key, child);
                     BoardState childBoardState = child.CurrentState.CheckBoardState(childMove);
@@ -172,7 +179,7 @@ namespace NeuralNetTreeStuffViewer
             return null;
         }
 
-        private NodeGameInfo SimulationAndPartialBackprop(MonteCarloNode<T, T1> node, bool player1Perspective)
+        private NodeGameInfo SimulationAndPartialBackprop(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet)
         {
             Players player = node.Player;
             var move = chooseMoveFunc.Invoke(node.CurrentState, node.AvailableMoves, player);
@@ -184,7 +191,10 @@ namespace NeuralNetTreeStuffViewer
                 state = node.CurrentState.Copy();
                 state.MakeMove(gameMove);
                 child = new MonteCarloNode<T, T1>(node, state, (move, gameMove.Move), GetOtherPlayer(player));
-                //allNodes.Add(child);
+                if (nodesSet != null)
+                {
+                    nodesSet.Add(child);
+                }
                 node.Children.Add(move, child);
             }
             else
@@ -195,7 +205,7 @@ namespace NeuralNetTreeStuffViewer
             BoardState boardState = state.CheckBoardState(gameMove);
             if (boardState == BoardState.Continue && child.TotalAvialableMovesCount != 0)
             {
-                NodeGameInfo childGameInfo = SimulationAndPartialBackprop(child, player1Perspective);
+                NodeGameInfo childGameInfo = SimulationAndPartialBackprop(child, player1Perspective, nodesSet);
                 node.GameInfo += childGameInfo;
                 if (child.FullyExplored)
                 {

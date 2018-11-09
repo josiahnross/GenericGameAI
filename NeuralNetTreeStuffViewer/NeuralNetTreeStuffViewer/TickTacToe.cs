@@ -289,5 +289,46 @@ namespace NeuralNetTreeStuffViewer
             return move.Y * boardSize + move.X;
         }
 
+        public double[] GetInputs(Players currentPlayer)
+        {
+            double[] arr = new double[board.XLength * board.YLength * 2 + 1];
+
+            int arrIndex = 0;
+            for (int y = 0; y < board.YLength; y++)
+            {
+                for (int x = 0; x < board.XLength; x++)
+                {
+                    if (board[x, y] == Players.YouOrFirst)
+                    {
+                        arr[arrIndex] = 1;
+                        arrIndex += 2;
+                    }
+                    else if (board[x, y] == Players.OpponentOrSecond)
+                    {
+                        arrIndex++;
+                        arr[arrIndex] = 1;
+                        arrIndex++;
+                    }
+                    else
+                    {
+                        arrIndex += 2;
+                    }
+                }
+            }
+            if (currentPlayer == Players.YouOrFirst)
+            {
+                arr[arrIndex] = 1;
+            }
+            else
+            {
+                arr[arrIndex] = 0;
+            }
+
+            return arr;
+        }
+
+        public void InitializeStaticVariables()
+        {
+        }
     }
 }

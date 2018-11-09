@@ -77,7 +77,8 @@ namespace NeuralNetTreeStuffViewer
         {
             if (DisplayGame != null)
             {
-                var node = MinMaxAlgorithm<T, T1>.EvaluateMoves(MakeMoveMinMaxDepth, this, AiFirst);
+                MinMaxNode<T, T1> node;
+                node = MinMaxAlgorithm<T, T1>.EvaluateMoves(MakeMoveMinMaxDepth, this, AiFirst);
                 MinMaxNode<T, T1> nextMoveChild = null;
                 foreach (var n in node.Children)
                 {
@@ -136,6 +137,7 @@ namespace NeuralNetTreeStuffViewer
         {
             Evaulator?.MakeMove(move, moveIndex);
             Game.MakeMove(move);
+            Game.CheckBoardState(move);
         }
     }
 
