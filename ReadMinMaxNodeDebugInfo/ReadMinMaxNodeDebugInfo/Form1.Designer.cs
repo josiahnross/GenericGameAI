@@ -1,6 +1,6 @@
 ﻿namespace ReadMinMaxNodeDebugInfo
 {
-    partial class Form1
+    partial class currentIndexTxtBox
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.treeView1 = new System.Windows.Forms.TreeView();
+            this.openDebugInputOutputButton = new System.Windows.Forms.TreeView();
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.button1 = new System.Windows.Forms.Button();
             this.boardPanel = new System.Windows.Forms.Panel();
@@ -37,21 +37,26 @@
             this.justBoardButton = new System.Windows.Forms.Button();
             this.openJustBoardFile = new System.Windows.Forms.Button();
             this.openFileDialog2 = new System.Windows.Forms.OpenFileDialog();
+            this.openDebugInOut = new System.Windows.Forms.Button();
+            this.openFileDialog3 = new System.Windows.Forms.OpenFileDialog();
+            this.indexUpDown = new System.Windows.Forms.NumericUpDown();
+            this.DebugLabel = new System.Windows.Forms.Label();
+            ((System.ComponentModel.ISupportInitialize)(this.indexUpDown)).BeginInit();
             this.SuspendLayout();
             // 
-            // treeView1
+            // openDebugInputOutputButton
             // 
-            this.treeView1.Location = new System.Drawing.Point(403, 12);
-            this.treeView1.Name = "treeView1";
-            this.treeView1.Size = new System.Drawing.Size(798, 712);
-            this.treeView1.TabIndex = 0;
+            this.openDebugInputOutputButton.Location = new System.Drawing.Point(403, 12);
+            this.openDebugInputOutputButton.Name = "openDebugInputOutputButton";
+            this.openDebugInputOutputButton.Size = new System.Drawing.Size(798, 712);
+            this.openDebugInputOutputButton.TabIndex = 0;
             // 
             // textBox1
             // 
-            this.textBox1.Location = new System.Drawing.Point(12, 128);
+            this.textBox1.Location = new System.Drawing.Point(12, 174);
             this.textBox1.Multiline = true;
             this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(127, 596);
+            this.textBox1.Size = new System.Drawing.Size(127, 550);
             this.textBox1.TabIndex = 1;
             // 
             // button1
@@ -117,21 +122,59 @@
     "TreeStuffViewer\\bin\\Debug";
             this.openFileDialog2.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog2_FileOk);
             // 
-            // Form1
+            // openDebugInOut
+            // 
+            this.openDebugInOut.Location = new System.Drawing.Point(13, 129);
+            this.openDebugInOut.Name = "openDebugInOut";
+            this.openDebugInOut.Size = new System.Drawing.Size(126, 39);
+            this.openDebugInOut.TabIndex = 7;
+            this.openDebugInOut.Text = "Open Debug Input Output";
+            this.openDebugInOut.UseVisualStyleBackColor = true;
+            this.openDebugInOut.Click += new System.EventHandler(this.openDebugInOut_Click);
+            // 
+            // openFileDialog3
+            // 
+            this.openFileDialog3.DefaultExt = "txt";
+            this.openFileDialog3.FileName = "openFileDialog3";
+            this.openFileDialog3.InitialDirectory = "C:\\Users\\Josiah\\Documents\\GitHub\\GenericGameAI\\NeuralNetTreeStuffViewer\\NeuralNet" +
+    "TreeStuffViewer\\bin\\Debug";
+            this.openFileDialog3.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog3_FileOk);
+            // 
+            // indexUpDown
+            // 
+            this.indexUpDown.Location = new System.Drawing.Point(145, 307);
+            this.indexUpDown.Name = "indexUpDown";
+            this.indexUpDown.Size = new System.Drawing.Size(252, 20);
+            this.indexUpDown.TabIndex = 11;
+            this.indexUpDown.ValueChanged += new System.EventHandler(this.indexUpDown_ValueChanged);
+            // 
+            // DebugLabel
+            // 
+            this.DebugLabel.AutoSize = true;
+            this.DebugLabel.Location = new System.Drawing.Point(146, 334);
+            this.DebugLabel.Name = "DebugLabel";
+            this.DebugLabel.Size = new System.Drawing.Size(0, 13);
+            this.DebugLabel.TabIndex = 12;
+            // 
+            // currentIndexTxtBox
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1213, 736);
+            this.Controls.Add(this.DebugLabel);
+            this.Controls.Add(this.indexUpDown);
+            this.Controls.Add(this.openDebugInOut);
             this.Controls.Add(this.openJustBoardFile);
             this.Controls.Add(this.justBoardButton);
             this.Controls.Add(this.fileButton);
             this.Controls.Add(this.boardPanel);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.textBox1);
-            this.Controls.Add(this.treeView1);
-            this.Name = "Form1";
+            this.Controls.Add(this.openDebugInputOutputButton);
+            this.Name = "currentIndexTxtBox";
             this.Text = "Form1";
             this.Load += new System.EventHandler(this.Form1_Load);
+            ((System.ComponentModel.ISupportInitialize)(this.indexUpDown)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -139,7 +182,7 @@
 
         #endregion
 
-        private System.Windows.Forms.TreeView treeView1;
+        private System.Windows.Forms.TreeView openDebugInputOutputButton;
         private System.Windows.Forms.TextBox textBox1;
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.Panel boardPanel;
@@ -148,6 +191,10 @@
         private System.Windows.Forms.Button justBoardButton;
         private System.Windows.Forms.Button openJustBoardFile;
         private System.Windows.Forms.OpenFileDialog openFileDialog2;
+        private System.Windows.Forms.Button openDebugInOut;
+        private System.Windows.Forms.OpenFileDialog openFileDialog3;
+        private System.Windows.Forms.NumericUpDown indexUpDown;
+        private System.Windows.Forms.Label DebugLabel;
     }
 }
 

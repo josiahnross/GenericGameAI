@@ -30,7 +30,7 @@ namespace NeuralNetTreeStuffViewer
         bool AIFirst = false;
         private void Form1_Load(object sender, EventArgs e)
         {
-            Funcs.Random = new Random(1);
+            Funcs.Random = new Random(3);
 
 
             if (false)
@@ -84,11 +84,14 @@ namespace NeuralNetTreeStuffViewer
                 var monteCarloEvaluator = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
                     Math.Sqrt(2), RandomMoveSelectionFunc, 0, 25, new Checkers());
                 MinMaxEvaluator<Checkers, CheckersMove> minMaxEvaluator = new MinMaxEvaluator<Checkers, CheckersMove>(new Checkers(), monteCarloEvaluator, 2, null);
-                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>();
-                trainer.GetTrainingInputs(new Checkers(), 100);
+
                 string path = "inputOutputs.txt";
-                trainer.GetTrainingOutputs(minMaxEvaluator, 30, path);
+                string debugPath = "debugInputOutputs.txt";
+                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(path, debugPath);//path, debugPath
+                trainer.GetTrainingInputs(new Checkers(), 100);
+                trainer.GetTrainingOutputs(minMaxEvaluator, 50, path, debugPath);
                 trainer.StoreInputOutputs(path);
+                trainer.StoreDebugInputOutputs(debugPath);
             }
         }
 

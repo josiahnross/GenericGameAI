@@ -12,11 +12,11 @@ using System.Windows.Forms;
 
 namespace ReadMinMaxNodeDebugInfo
 {
-    public partial class Form1 : Form
+    public partial class currentIndexTxtBox : Form
     {
         Dictionary<string, (Action<string> init, Action<string, object> set)> debugInfoDisplayActions;
         object actionInfo;
-        public Form1()
+        public currentIndexTxtBox()
         {
             InitializeComponent();
             debugInfoDisplayActions = new Dictionary<string, (Action<string> init, Action<string, object> set)>();
@@ -36,8 +36,8 @@ namespace ReadMinMaxNodeDebugInfo
 
             infos = new Dictionary<TreeNode, DebugInfo>();
 
-            treeView1.Nodes.Clear();
-            var n = treeView1.Nodes.Add(info.ToString());
+            openDebugInputOutputButton.Nodes.Clear();
+            var n = openDebugInputOutputButton.Nodes.Add(info.ToString());
             infos.Add(n, info);
             foreach (var c in info.Children)
             {
@@ -62,12 +62,12 @@ namespace ReadMinMaxNodeDebugInfo
 
         private void Form1_Load(object sender, EventArgs e)
         {
-            treeView1.AfterSelect += TreeView1_AfterSelect;
+            openDebugInputOutputButton.AfterSelect += TreeView1_AfterSelect;
         }
 
         private void TreeView1_AfterSelect(object sender, TreeViewEventArgs e)
         {
-            var node = treeView1.SelectedNode;
+            var node = openDebugInputOutputButton.SelectedNode;
             var info = infos[node];
             if (debugInfoDisplayActions.ContainsKey(info.BoardName))
             {
@@ -206,7 +206,7 @@ namespace ReadMinMaxNodeDebugInfo
                 }
                 if (piece[3] == "0")
                 {
-                    if (!((i%8) % 2 == 1 ^ (i/8) % 2 == 1))
+                    if (!((i % 8) % 2 == 1 ^ (i / 8) % 2 == 1))
                     {
                         color = Color.DarkGray;
                     }
@@ -248,7 +248,7 @@ namespace ReadMinMaxNodeDebugInfo
         void LoadBoardFromTxt(string txt)
         {
             infos = new Dictionary<TreeNode, DebugInfo>();
-            treeView1.Nodes.Clear();
+            openDebugInputOutputButton.Nodes.Clear();
 
             BoardInfo info = JsonConvert.DeserializeObject<BoardInfo>(txt);
             if (debugInfoDisplayActions.ContainsKey(info.BoardName))
@@ -267,6 +267,54 @@ namespace ReadMinMaxNodeDebugInfo
         {
             string info = File.ReadAllText(openFileDialog2.FileName);
             LoadBoardFromTxt(info);
+        }
+
+        private void openDebugInOut_Click(object sender, EventArgs e)
+        {
+            openFileDialog3.ShowDialog();
+        }
+
+        private void openFileDialog3_FileOk(object sender, CancelEventArgs e)
+        {
+            string info = File.ReadAllText(openFileDialog3.FileName);
+            LoadDebugInOutInfo(info);
+        }
+        List<InputOutputDebugInfo> inOutDebugInfo = null;
+        void LoadDebugInOutInfo(string txt)
+        {
+            inOutDebugInfo = JsonConvert.DeserializeObject<List<InputOutputDebugInfo>>(txt);
+            if (inOutDebugInfo.Count > 0)
+            {
+                LoadDebugInOutInfo(inOutDebugInfo[0]);
+                indexUpDown.Value = 0;
+            }
+        }
+        void LoadDebugInOutInfo(InputOutputDebugInfo info)
+        {
+            if (debugInfoDisplayActions.ContainsKey(info.BoardInfo.BoardName))
+            {
+                debugInfoDisplayActions[info.BoardInfo.BoardName].init?.Invoke(info.BoardInfo.Board);
+                debugInfoDisplayActions[info.BoardInfo.BoardName].set?.Invoke(info.BoardInfo.Board, actionInfo);
+            }
+
+            DebugLabel.Text = "Value: ";
+            if (info.Output == null)
+            {
+                DebugLabel.Text += "null";
+            }
+            else
+            {
+                DebugLabel.Text += info.Output.ToString();
+            }
+            DebugLabel.Text += " Player: " + Enum.GetName(typeof(Players), info.Player);
+        }
+        private void indexUpDown_ValueChanged(object sender, EventArgs e)
+        {
+            if (inOutDebugInfo != null && inOutDebugInfo.Count > 0)
+            {
+                indexUpDown.Value = indexUpDown.Value % inOutDebugInfo.Count;
+                LoadDebugInOutInfo(inOutDebugInfo[(int)indexUpDown.Value]);
+            }
         }
     }
     public struct DebugInfo
@@ -307,5 +355,23 @@ namespace ReadMinMaxNodeDebugInfo
     {
         public string Board { get; set; }
         public string BoardName { get; set; }
+    }
+    public struct InputOutputDebugInfo
+    {
+        public double? Output { get; set; }
+        public BoardInfo BoardInfo { get; set; }
+        public Players Player { get; set; }
+        public InputOutputDebugInfo(BoardInfo boardInfo, double? output, Players player)
+        {
+            Output = output;
+            BoardInfo = boardInfo;
+            Player = player;
+        }
+    }
+    public enum Players
+    {
+        None,
+        YouOrFirst,
+        OpponentOrSecond
     }
 }
