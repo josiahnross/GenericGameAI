@@ -1,4 +1,5 @@
-﻿using System;
+﻿using NeuralNetTreeStuffViewer.MinMaxAlg;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,45 +7,73 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public class MinMaxEvaluator: IEvaluateableTurnBasedGame<MinMaxGame, bool>
+    public class MinMaxEvaluator<T, T1> : IEvaluateableTurnBasedGame<T, T1>
+        where T : ITurnBasedGame<T, T1>
+        where T1 : struct
     {
-        MinMaxGame game;
-        public ITurnBasedGame<MinMaxGame, bool> Game { get { return game; } }
+        public uint MakeMoveMinMaxDepth { get; set; }
+        public IEvaluateableTurnBasedGame<T, T1> Evaluator { get; set; }
+        public ITurnBasedGame<T, T1> Game { get; }
 
-        private MinMaxEvaluator(MinMaxGame game)
+        protected MinMaxEvaluator(MinMaxEvaluator<T, T1> minMaxEval, ITurnBasedGame<T, T1> game)
         {
-            game = new MinMaxGame(game);
-        }
-        public MinMaxEvaluator(int depth, Func<double> randomFunc, double[] values = null)
-        {
-            game = new MinMaxGame(depth, randomFunc, values);
-        }
+            Evaluator = minMaxEval.Evaluator.CopyEInterface(false);
 
-        public IEvaluateableTurnBasedGame<MinMaxGame, bool> CopyEInterface()
-        {
-            return new MinMaxEvaluator(this.game);
+            Game = game;
+            MakeMoveMinMaxDepth = minMaxEval.MakeMoveMinMaxDepth;
         }
 
-        public double EvaluateCurrentState()
+        public MinMaxEvaluator(T game, IEvaluateableTurnBasedGame<T, T1> evaulator, uint makeMoveMinMaxDepth = 5, string debugStringPath = null)
         {
-            if (game.Depth - game.CurrentDepth <= 0)
-            {
-                return game.Nums[game.MinIndex];
-            }
-            else
-            {
-                return game.RandomFunc.Invoke();
-            }
+            Evaluator = evaulator;
+            if (game == null)
+            { throw new NullReferenceException(); }
+            Game = game;
+            MakeMoveMinMaxDepth = makeMoveMinMaxDepth;
         }
-
-        public void MakeMove(GameMove<bool> move, int moveIndex)
+        public IEvaluateableTurnBasedGame<T, T1> CopyEInterface(bool copyEval = true)
         {
-            game.MakeMove(move);
+            return new MinMaxEvaluator<T, T1>(this, Game.Copy());
         }
 
         public void Restart()
         {
-            game.Restart();
+            Evaluator.Restart();
         }
+
+        public IEvaluateableTurnBasedGame<T, T1> CopyWithNewState(ITurnBasedGame<T, T1> state, Players player)
+        {
+            var copy = new MinMaxEvaluator<T, T1>(this, state);
+            return copy;
+        }
+
+        public double EvaluateCurrentState(Players player)
+        {
+            MinMaxNode<T, T1> node = MinMaxAlgorithm<T, T1>.EvaluateMoves(MakeMoveMinMaxDepth, Evaluator, isMaximizer(player));
+            return node.Value;
+        }
+        public double EvaluateCurrentState(ITurnBasedGame<T, T1> state, Players player)
+        {
+            var tempEval = Evaluator.CopyWithNewState(state, player);
+            MinMaxNode<T, T1> node = MinMaxAlgorithm<T, T1>.EvaluateMoves(MakeMoveMinMaxDepth, tempEval, isMaximizer(player));
+            return node.Value;
+        }
+
+        public static bool isMaximizer(Players player)
+        {
+            if (player == Players.YouOrFirst)
+            {
+                return true;
+            }
+            return false;
+        }
+        public void MakeMove(GameMove<T1> move, int moveIndex)
+        {
+            Evaluator?.MakeMove(move, moveIndex);
+            Game.MakeMove(move);
+            Game.CheckBoardState(move);
+        }
+
+
     }
 }

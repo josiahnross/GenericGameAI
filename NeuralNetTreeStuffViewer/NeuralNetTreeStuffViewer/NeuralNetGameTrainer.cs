@@ -13,45 +13,49 @@ namespace NeuralNetTreeStuffViewer
         where T : ITurnBasedGame<T, T1>
         where T1 : struct
     {
-        List<GameInputs<T, T1>> inputs;
-        uint minMaxDepth;
-        public NeuralNetGameTrainer(uint minMaxDepth)
+        List<InputOutputPair<T, T1>> inputOutputs;
+        public NeuralNetGameTrainer(string inputOutputPath = null)
         {
-            inputs = new List<GameInputs<T, T1>>();
-            this.minMaxDepth = minMaxDepth;
-        }
-
-        public void GetTrainingOutputs()
-        {
-            MinMaxNode<T, T1> node;
-            MinMaxNode<T, T1> nextMoveChild = null;
-
-
-
-            node = MinMaxAlgorithm<T, T1>.EvaluateMoves(minMaxDepth, this, AiFirst);
-            nextMoveChild = null;
-            foreach (var n in node.Children)
+            if (inputOutputPath == null)
             {
-                if (n.Value == node.Value)
+                inputOutputs = new List<InputOutputPair<T, T1>>();
+            }
+            else
+            {
+                inputOutputs = JsonConvert.DeserializeObject<List<InputOutputPair<T, T1>>>(inputOutputPath);
+            }
+        }
+        public void StoreInputOutputs(string path)
+        {
+            File.WriteAllText(path, JsonConvert.SerializeObject(inputOutputs));
+        }
+        public void GetTrainingOutputs(IEvaluateableTurnBasedGame<T, T1> evaluator, int storeAmount = -1, string path = null)
+        {
+            int count = 0;
+            for(int i = 0; i< inputOutputs.Count; i++)
+            {
+                if (inputOutputs[i].Output == null)
                 {
-                    nextMoveChild = n;
-                    break;
+                    double v = evaluator.EvaluateCurrentState(inputOutputs[i].GameInputs.CurrentState, inputOutputs[i].GameInputs.Player);
+                    inputOutputs[i] = new InputOutputPair<T, T1>(inputOutputs[i].GameInputs, v);
+                    if (count > 0 && count % storeAmount == 0)
+                    {
+                        StoreInputOutputs(path);
+                    }
+                    count++;
                 }
             }
         }
 
-        public void GetTrainingInputs(ITurnBasedGame<T, T1> game, int amountOfSims, string path)
+        public void GetTrainingInputs(ITurnBasedGame<T, T1> game, int amountOfSims, Players startPlayer = Players.YouOrFirst)
         {
-            MonteCarloTree<T, T1> tree = new MonteCarloTree<T, T1>(game, MonteCarloTree<T, T1>.UTCSelection, Math.Sqrt(2), NetChooseMove);
+            MonteCarloTree<T, T1> tree = new MonteCarloTree<T, T1>(game, MonteCarloTree<T, T1>.UTCSelection, Math.Sqrt(2), NetChooseMove, startPlayer);
             HashSet<MonteCarloNode<T, T1>> nodes = new HashSet<MonteCarloNode<T, T1>>();
             tree.RunMonteCarloSims(amountOfSims, tree.Root, nodes);
             foreach (var n in nodes)
             {
-                inputs.Add(new GameInputs<T, T1>(n.CurrentState.GetInputs(Funcs.OppositePlayer(n.Player)), n.CurrentState));
-            }
-            if (path != null && path.Length > 0)
-            {
-                File.WriteAllText(JsonConvert.SerializeObject(inputs), path);
+                var player = n.Player;
+                inputOutputs.Add(new InputOutputPair<T, T1>(new GameInputs<T, T1>(n.CurrentState.GetInputs(player), n.CurrentState, player), null));
             }
         }
 
@@ -64,12 +68,25 @@ namespace NeuralNetTreeStuffViewer
             return avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;
         }
     }
+    public struct InputOutputPair<T, T1> where T : ITurnBasedGame<T, T1>
+    {
+        public GameInputs<T, T1> GameInputs { get; set; }
+        public double? Output { get; set; }
+
+        public InputOutputPair(GameInputs<T, T1> gameInputs, double? output)
+        {
+            GameInputs = gameInputs;
+            Output = output;
+        }
+    }
     public struct GameInputs<T, T1> where T : ITurnBasedGame<T, T1>
     {
         public double[] Inputs { get; set; }
         public ITurnBasedGame<T, T1> CurrentState { get; set; }
-        public GameInputs(double[] inputs, ITurnBasedGame<T, T1> currentState)
+        public Players Player { get; set; }
+        public GameInputs(double[] inputs, ITurnBasedGame<T, T1> currentState, Players player)
         {
+            Player = player;
             Inputs = inputs;
             CurrentState = currentState;
         }

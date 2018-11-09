@@ -32,45 +32,63 @@ namespace NeuralNetTreeStuffViewer
         {
             Funcs.Random = new Random(1);
 
+
             if (false)
             {
                 TickTacToe tickTacToe = new TickTacToe(3);
                 tickTacToe.DisplayGame(gamePanel);
-                ticTacToeEvaluator = new MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>(new TickTacToe(3), new TickTacToe(3), AIFirst,
-                    new MonteCarloEvaluator<TickTacToe, BoardPosition>(MonteCarloTree<TickTacToe, BoardPosition>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100),
-                    9, debugInfoPath);
+                ticTacToeEvaluator = new MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>(new TickTacToe(3), new TickTacToe(3), AIFirst,9, debugInfoPath);
+                ticTacToeEvaluator.SetEvaluator(new MonteCarloEvaluator<TickTacToe, BoardPosition>(MonteCarloTree<TickTacToe, BoardPosition>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, ticTacToeEvaluator.Game));
             }
             else if (false)
             {
                 ConnectFour connectFour = new ConnectFour(7, 6);
                 connectFour.DisplayGame(gamePanel);
-                connectFourEvaluator = new MinMaxTurnBasedGameInterface<ConnectFour, int>(new ConnectFour(7, 6), connectFour, AIFirst,
-                    new MonteCarloEvaluator<ConnectFour, int>(MonteCarloTree<ConnectFour, int>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100),
-                    3, debugInfoPath);
+                connectFourEvaluator = new MinMaxTurnBasedGameInterface<ConnectFour, int>(new ConnectFour(7, 6), connectFour, AIFirst, 3, debugInfoPath);
+                connectFourEvaluator.SetEvaluator(new MonteCarloEvaluator<ConnectFour, int>(MonteCarloTree<ConnectFour, int>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, connectFourEvaluator.Game));
             }
-            else
+            else if(false)
             {
                 Checkers checkers = new Checkers();
                 checkers.DisplayGame(gamePanel);
                 checkers.GetInputs(Players.YouOrFirst);
-                IEvaulator<Checkers, CheckersMove> eval;
+                IEvaluateableTurnBasedGame<Checkers, CheckersMove> eval = null;
                 uint minMaxDepth;
-                if(false)
+                bool monteCarloEval = false;
+                if(monteCarloEval)
                 {
-                    eval = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
-                    Math.Sqrt(2), RandomMoveSelectionFunc, 50, 25);
                     minMaxDepth = 3;
                 }
                 else
                 {
-                    eval = new JustEvaluator<Checkers, CheckersMove>(g => (g.Game.AmountOfFirstPlayerCheckers - g.Game.AmountOfSecondPlayerCheckers + ((g.Game.AmountOfFirstPlayerKings - g.Game.AmountOfSecondPlayerKings)*1.5f)));
                     minMaxDepth = 6;
                 }
                 if (true)
                 {
                     checkersEvaluator = new MinMaxTurnBasedGameInterface<Checkers, CheckersMove>(new Checkers(), checkers, 
-                        AIFirst, eval, minMaxDepth, debugInfoPath);
+                        AIFirst, minMaxDepth, debugInfoPath);
                 }
+                if (false)
+                {
+                    eval = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
+                    Math.Sqrt(2), RandomMoveSelectionFunc, 50, 25, checkersEvaluator.Game);
+                }
+                else
+                {
+                    eval = new JustEvaluator<Checkers, CheckersMove>(g => (g.Game.AmountOfFirstPlayerCheckers - g.Game.AmountOfSecondPlayerCheckers + ((g.Game.AmountOfFirstPlayerKings - g.Game.AmountOfSecondPlayerKings) * 1.5f)), checkersEvaluator);
+                }
+                checkersEvaluator.SetEvaluator(eval);
+            }
+            else
+            {
+                var monteCarloEvaluator = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
+                    Math.Sqrt(2), RandomMoveSelectionFunc, 0, 25, new Checkers());
+                MinMaxEvaluator<Checkers, CheckersMove> minMaxEvaluator = new MinMaxEvaluator<Checkers, CheckersMove>(new Checkers(), monteCarloEvaluator, 2, null);
+                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>();
+                trainer.GetTrainingInputs(new Checkers(), 100);
+                string path = "inputOutputs.txt";
+                trainer.GetTrainingOutputs(minMaxEvaluator, 30, path);
+                trainer.StoreInputOutputs(path);
             }
         }
 
@@ -134,5 +152,9 @@ namespace NeuralNetTreeStuffViewer
             }
             return Players.None;
         }
+        public static Players GetPlayerFromBool(bool player)
+        {
+            return player ? Players.YouOrFirst : Players.OpponentOrSecond;
+        } 
     }
 }

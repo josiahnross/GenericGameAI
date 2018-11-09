@@ -6,31 +6,47 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public class JustEvaluator<T, T1> : IEvaulator<T, T1>
+    public class JustEvaluator<T, T1> : IEvaluateableTurnBasedGame<T, T1>
         where T : ITurnBasedGame<T, T1>
         where T1 : struct
     {
+        IEvaluateableTurnBasedGame<T, T1> parentEval;
         Func<ITurnBasedGame<T, T1>, double> evaluateFunc;
-        public JustEvaluator(Func<ITurnBasedGame<T, T1>, double> evaluateFunc)
+        public JustEvaluator(Func<ITurnBasedGame<T, T1>, double> evaluateFunc, IEvaluateableTurnBasedGame<T, T1> parentEval)
         {
             if(evaluateFunc == null)
             {
                 throw new NullReferenceException();
             }
             this.evaluateFunc = evaluateFunc;
-        }
-        public IEvaulator<T, T1> Copy()
-        {
-            return new JustEvaluator<T, T1>(evaluateFunc);
+            this.parentEval = parentEval;
         }
 
-        public double Evaluate(ITurnBasedGame<T, T1> currentState)
+        public ITurnBasedGame<T, T1> Game { get { return parentEval.Game; } }
+
+        public IEvaluateableTurnBasedGame<T, T1> CopyEInterface(bool copyEval = true)
         {
-            return evaluateFunc.Invoke(currentState);
+            IEvaluateableTurnBasedGame<T, T1> newParentEval = parentEval;
+            if(copyEval)
+            {
+                newParentEval = parentEval.CopyEInterface(false);
+            }
+            return new JustEvaluator<T, T1>(evaluateFunc, newParentEval);
         }
 
-        public void Init(T game, bool aiFirst)
+        public IEvaluateableTurnBasedGame<T, T1> CopyWithNewState(ITurnBasedGame<T, T1> state, Players player)
         {
+            return new JustEvaluator<T, T1>(evaluateFunc, parentEval.CopyWithNewState(state, player));
+        }
+
+        public double EvaluateCurrentState(Players player)
+        {
+            return evaluateFunc.Invoke(Game);
+        }
+
+        public double EvaluateCurrentState(ITurnBasedGame<T, T1> state, Players player)
+        {
+            return evaluateFunc.Invoke(state);
         }
 
         public void MakeMove(GameMove<T1> move, int moveIndex)

@@ -14,12 +14,12 @@ namespace NeuralNetTreeStuffViewer
         Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction;
         public double ExplorationParam { get; }
         Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc;
-        public MonteCarloTree(ITurnBasedGame<T, T1> game, Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam, Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc)
+        public MonteCarloTree(ITurnBasedGame<T, T1> game, Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam, Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc, Players startPlayer)
         {
             this.chooseMoveFunc = chooseMoveFunc;
             ExplorationParam = explorationParam;
             this.selectionFunction = selectionFunction;
-            Root = new MonteCarloNode<T, T1>(null, game, (-1, default(T1)), Players.YouOrFirst);
+            Root = new MonteCarloNode<T, T1>(null, game, (-1, default(T1)), startPlayer);
             //allNodes = new List<MonteCarloNode<T, T1>>();
             //allNodes.Add(Root);
         }

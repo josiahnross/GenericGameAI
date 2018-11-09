@@ -18,7 +18,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
         {
             if (currentDepth >= depth || currentNode.AvailableMoves == null || currentNode.AvailableMoves.Count == 0)
             {
-                currentNode.Value = currentNode.CurrentState.EvaluateCurrentState();
+                currentNode.Value = currentNode.CurrentState.EvaluateCurrentState(Funcs.GetPlayerFromBool(currentNode.MaxTurn));
                 if (currentNode.Parent != null)
                 {
                     currentNode.Parent.ExploredChildren++;
@@ -33,7 +33,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
                     {
                         var childState = currentNode.CurrentState.CopyEInterface();
                         bool childMaxTurn = !currentNode.MaxTurn;
-                        childState.MakeMove(new GameMove<T1>(move.Value, childMaxTurn ? Players.OpponentOrSecond : Players.YouOrFirst), move.Key);
+                        childState.MakeMove(new GameMove<T1>(move.Value, Funcs.GetPlayerFromBool(currentNode.MaxTurn)), move.Key);
                         MinMaxNode<T, T1> childNode = new MinMaxNode<T, T1>(childMaxTurn, childState, currentNode, new MoveIndex<T1>(move.Key, move.Value));
 
                         currentNode.Children.Add(childNode);

@@ -235,9 +235,9 @@ namespace NeuralNetTreeStuffViewer
             }
             else
             {
-                if (moves.Count <= 0)
+                if (moves.Count <= 0 && finishedGame == null)
                 {
-                    finishedGame = BoardState.Continue;
+                    finishedGame = BoardState.Draw;
                 }
                 return moves;
             }
@@ -412,23 +412,26 @@ namespace NeuralNetTreeStuffViewer
 
         public BoardState CheckBoardState(GameMove<CheckersMove> lastMove)
         {
-            if (finishedGame != null)
+            if (firstCheckers.Count > 0 ^ secondCheckers.Count > 0)
+            {
+                if (firstCheckers.Count > 0)
+                {
+                    finishedGame = BoardState.Win;
+                    return BoardState.Win;
+                }
+                else
+                {
+                    finishedGame = BoardState.Loss;
+                    return BoardState.Loss;
+                }
+            }
+            else if (finishedGame != null)
             {
                 return finishedGame.Value;
             }
-            if (firstCheckers.Count > 0 && secondCheckers.Count > 0)
+            else//if (firstCheckers.Count > 0 && secondCheckers.Count > 0)
             {
                 return BoardState.Continue;
-            }
-            else if (firstCheckers.Count > 0)
-            {
-                finishedGame = BoardState.Win;
-                return BoardState.Win;
-            }
-            else
-            {
-                finishedGame = BoardState.Loss;
-                return BoardState.Loss;
             }
         }
 
