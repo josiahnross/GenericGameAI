@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,9 +9,13 @@ namespace NeuralNetTreeStuffViewer
 {
     public class My2dArray<T>
     {
+        [JsonIgnore]
         public int XLength { get; }
+        [JsonIgnore]
         public int YLength { get; }
+        [JsonIgnore]
         public T this[BoardPosition position] { get => this[position.X, position.Y]; set => this[position.X, position.Y] = value; }
+        [JsonIgnore]
         public T this [int x, int y]
         {
             get
@@ -30,6 +35,7 @@ namespace NeuralNetTreeStuffViewer
                 Array[(y * XLength) + x] = value;
             }
         }
+        [JsonProperty]
         public T[] Array { get; private set; }
         public My2dArray(int xLength, int yLength)
         {

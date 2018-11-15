@@ -23,6 +23,7 @@ namespace ReadMinMaxNodeDebugInfo
             debugInfoDisplayActions.Add("TickTacToe", (InitTickTacToeDisplay, TickTacToeDisplayAction));
             debugInfoDisplayActions.Add("ConnectFour", (InitConnectFourDisplay, ConnectFourDisplayAction));
             debugInfoDisplayActions.Add("Checkers", (InitCheckersDisplay, CheckersDisplayAction));
+            indexUpDown.Maximum = decimal.MaxValue;
         }
 
         Dictionary<TreeNode, DebugInfo> infos;
@@ -225,6 +226,7 @@ namespace ReadMinMaxNodeDebugInfo
                 }
                 buttons[i].BackColor = color;
                 buttons[i].Text = txt;
+                buttons[i].Font = new Font(buttons[i].Font.FontFamily, 1f);
             }
         }
         #endregion
@@ -304,7 +306,27 @@ namespace ReadMinMaxNodeDebugInfo
             }
             else
             {
-                DebugLabel.Text += info.Output.ToString();
+                DebugLabel.Text += "Value: " + info.Output[0].ToString();
+                if(info.Output.Length > 1)
+                {
+                    int index = -1;
+                    for(int i = 1; i < info.Output.Length; i++)
+                    {
+                        if(info.Output[i] == 1)
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+                    if(index >= 1)
+                    {
+                        var move = CheckersMove.GetMoveFromHash(index - 1);
+                        DebugLabel.Text += " Move: (Position: (" + move.Position + ") ";
+                        DebugLabel.Text += "Left: " + move.Left.ToString();
+                        DebugLabel.Text += " Jump: " + move.Jump.ToString();
+                        DebugLabel.Text += " Back: " + move.Back.ToString() + ")";
+                    }
+                }
             }
             DebugLabel.Text += " Player: " + Enum.GetName(typeof(Players), info.Player);
         }
@@ -358,10 +380,10 @@ namespace ReadMinMaxNodeDebugInfo
     }
     public struct InputOutputDebugInfo
     {
-        public double? Output { get; set; }
+        public double[] Output { get; set; }
         public BoardInfo BoardInfo { get; set; }
         public Players Player { get; set; }
-        public InputOutputDebugInfo(BoardInfo boardInfo, double? output, Players player)
+        public InputOutputDebugInfo(BoardInfo boardInfo, double[] output, Players player)
         {
             Output = output;
             BoardInfo = boardInfo;
@@ -373,5 +395,180 @@ namespace ReadMinMaxNodeDebugInfo
         None,
         YouOrFirst,
         OpponentOrSecond
+    }
+    public struct CheckersMove
+    {
+        public bool Pass { get; set; }
+        public BoardPosition Position { get; set; }
+        public bool Left { get; set; }
+        public bool Jump { get; set; }
+        public bool Back { get; set; }
+        public Players Player { get; set; }
+        public CheckersMove(bool pass, Players player)
+        {
+            if (!pass) { throw new NullReferenceException(); }
+            Pass = pass;
+            Position = new BoardPosition(-1, -1);
+            Left = false;
+            Jump = false;
+            Back = false;
+            Player = player;
+        }
+        public CheckersMove(BoardPosition position, bool left, bool jump, bool back, Players player)
+        {
+            Pass = false;
+            Position = position;
+            Left = left;
+            Jump = jump;
+            Back = back;
+            Player = player;
+        }
+        public static CheckersMove GetMoveFromHash(int hash)
+        {
+            if(hash == 0)
+            {
+                return new CheckersMove(true, Players.YouOrFirst);
+            }
+            int initHash = hash;
+            int boardSize = 8;
+            int boolsVariation = 8;
+            int offset = 0;
+            if (!CheckerPieceSquare(0, 0))
+            {
+                offset++;
+            }
+            BoardPosition pos = new BoardPosition(0, 0);
+            bool breakOut = false;
+            for(int y = 0; y < boardSize; y++)
+            {
+                for(int x = 0; x < boardSize; x++)
+                {
+                    if (!CheckerPieceSquare(x, y)) { continue; }
+                    if(hash < (y * boardSize + x + offset) / 2 * boolsVariation + 1)
+                    {
+                        breakOut = true;
+                        break;
+                    }
+                    pos.X = x;
+                    pos.Y = y;
+                }
+                if(breakOut)
+                {
+                    break;
+                }
+            }
+
+            if (!breakOut)
+            {
+                pos = new BoardPosition(boardSize-1, boardSize-1);
+            }
+                CheckersMove move = new CheckersMove(pos, false, false, false, Players.YouOrFirst);
+                hash -= (pos.Y * boardSize + pos.X + offset) / 2 * boolsVariation + 1;
+                if (hash >3)
+                {
+                    move.Back = true;
+                    hash -= 4;
+                }
+                if(hash > 1)
+                {
+                    move.Jump = true;
+                    hash -= 2;
+                }
+                if(hash > 0)
+                {
+                    move.Left = true;
+                    hash -= 1;
+                }
+                if(hash > 0)
+                {
+
+                }
+                return move;
+            
+            //return new CheckersMove();
+        }
+        static bool CheckerPieceSquare(int x, int y)
+        {
+            return !(x % 2 == 1 ^ y % 2 == 1);
+        }
+        public int GetUniqueIdentifier()
+        {
+            if (Pass)
+            {
+                return 0;
+            }
+            else
+            {
+                int boardSize = 8;
+                int boolsVariation = 8;
+                int offset = 0;
+                if (!CheckerPieceSquare(0, 0))
+                {
+                    offset++;
+                }
+                int returnInt = (Position.Y * boardSize + Position.X + offset) / 2 * boolsVariation;
+                if (Left)
+                {
+                    returnInt += 1;
+                }
+                if (Jump)
+                {
+                    returnInt += 2;
+                }
+                if (Back)
+                {
+                    returnInt += 4;
+                }
+                returnInt += 1;//pass
+                return returnInt;
+            }
+        }
+    }
+
+    public struct BoardPosition
+    {
+        public int X { get; set; }
+        public int Y { get; set; }
+        public BoardPosition(int x, int y)
+        {
+            X = x;
+            Y = y;
+        }
+        public static BoardPosition operator +(BoardPosition left, BoardPosition right)
+        {
+            return new BoardPosition(left.X + right.X, left.Y + right.Y);
+        }
+        public static BoardPosition operator -(BoardPosition left, BoardPosition right)
+        {
+            return new BoardPosition(left.X - right.X, left.Y - right.Y);
+        }
+        public static BoardPosition operator *(BoardPosition left, BoardPosition right)
+        {
+            return new BoardPosition(left.X * right.X, left.Y * right.Y);
+        }
+        public static BoardPosition operator /(BoardPosition left, BoardPosition right)
+        {
+            return new BoardPosition(left.X / right.X, left.Y / right.Y);
+        }
+        public static BoardPosition operator *(BoardPosition left, int right)
+        {
+            return new BoardPosition(left.X * right, left.Y * right);
+        }
+        public static BoardPosition operator /(BoardPosition left, int right)
+        {
+            return new BoardPosition(left.X / right, left.Y / right);
+        }
+        public static bool operator ==(BoardPosition left, BoardPosition right)
+        {
+            return left.X == right.X && left.Y == right.Y;
+        }
+        public static bool operator !=(BoardPosition left, BoardPosition right)
+        {
+            return !(left == right);
+        }
+        public override string ToString()
+        {
+            return X.ToString() + " , " + Y.ToString();
+        }
     }
 }

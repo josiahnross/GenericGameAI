@@ -16,9 +16,10 @@ namespace NeuralNetTreeStuffViewer
         public Dictionary<int, T1> AvailableMoves { get; }
         public bool FullyExplored { get; set; }
         public (int index, T1 move) MoveIndex { get; }
-        public int TotalAvialableMovesCount { get; }
+        public int TotalAvialableMovesCount { get; private set; }
         public bool EndOfGame { get; set; }
-        public MonteCarloNode(MonteCarloNode<T, T1> parent, ITurnBasedGame<T, T1> currentState, (int index, T1 move) moveIndex, Players player)
+        public int Depth { get; }
+        public MonteCarloNode(MonteCarloNode<T, T1> parent, ITurnBasedGame<T, T1> currentState, (int index, T1 move) moveIndex, Players player, int depth)
         {
             EndOfGame = false;
             FullyExplored = false;
@@ -30,6 +31,13 @@ namespace NeuralNetTreeStuffViewer
             AvailableMoves = currentState.AvailableMoves(Player);
             TotalAvialableMovesCount = AvailableMoves.Count;
             MoveIndex = moveIndex;
+            Depth = depth;
+        }
+        public void ClearMoves()
+        {
+            TotalAvialableMovesCount = 0;
+            AvailableMoves.Clear();
+            Children.Clear();
         }
         public void KillParent()
         {

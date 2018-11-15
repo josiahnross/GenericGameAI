@@ -14,6 +14,8 @@ namespace NeuralNetTreeStuffViewer
 
         public TickTacToe Game { get { return this; } }
 
+        public int TotalAmountOfMoves => 9;
+
         int placesRemaining;
         public event EventHandler<GameButtonArgs<(GameMove<BoardPosition> move, bool done)>> MoveMade;
         protected TickTacToe(TickTacToe game)
@@ -146,6 +148,26 @@ namespace NeuralNetTreeStuffViewer
             }
 
             return BoardState.Continue;
+        }
+
+        public BoardState CheckBoardState()
+        {
+            BoardState boardState = BoardState.Continue;
+            for(int x = 0; x < board.XLength; x++)
+            {
+                for (int y = 0; y < board.YLength; y++)
+                {
+                    if (board[x,y] != Players.None)
+                    {
+                        boardState = CheckBoardState(new GameMove<BoardPosition>(new BoardPosition(x, y), board[x, y]));
+                        if(boardState != BoardState.Continue)
+                        {
+                            return boardState;
+                        }
+                    }
+                }
+            }
+            return boardState;
         }
 
         public Dictionary<int, BoardPosition> AvailableMoves(Players player)
@@ -329,6 +351,30 @@ namespace NeuralNetTreeStuffViewer
 
         public void InitializeStaticVariables()
         {
+        }
+
+        public void DeserializeInit()
+        {
+        }
+
+        public bool BoardEquals(ITurnBasedGame<TickTacToe, BoardPosition> other)
+        {
+            TickTacToe otherTTT = (TickTacToe)other;
+            if(placesRemaining == otherTTT.placesRemaining && boardSize == otherTTT.boardSize)
+            {
+                for(int x = 0; x < board.XLength; x++)
+                {
+                    for(int y = 0; y < board.YLength; y++)
+                    {
+                        if(board[x,y] != otherTTT.board[x,y])
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            return false;
         }
     }
 }

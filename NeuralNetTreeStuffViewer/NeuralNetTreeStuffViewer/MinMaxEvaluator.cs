@@ -59,6 +59,27 @@ namespace NeuralNetTreeStuffViewer
             return node.Value;
         }
 
+        public (double value, int? moveKey) EvaluateCurrentStateAndGetMove(ITurnBasedGame<T, T1> state, Players player)
+        {
+            var tempEval = Evaluator.CopyWithNewState(state, player);
+            MinMaxNode<T, T1> node = MinMaxAlgorithm<T, T1>.EvaluateMoves(MakeMoveMinMaxDepth, tempEval, isMaximizer(player));
+            MinMaxNode<T, T1> nextMoveChild = null;
+            foreach (var n in node.Children)
+            {
+                if (n.Value == node.Value)
+                {
+                    nextMoveChild = n;
+                    break;
+                }
+            }
+            int? moveKey = null;
+            if(nextMoveChild != null && nextMoveChild.MoveIndex != null)
+            {
+                moveKey = nextMoveChild.MoveIndex.Value.Index;
+            }
+            return (node.Value, moveKey);
+        }
+
         public static bool isMaximizer(Players player)
         {
             if (player == Players.YouOrFirst)
@@ -67,9 +88,12 @@ namespace NeuralNetTreeStuffViewer
             }
             return false;
         }
-        public void MakeMove(GameMove<T1> move, int moveIndex)
+        public void MakeMove(GameMove<T1> move, int moveIndex, bool evalMakeMove = true)
         {
-            Evaluator?.MakeMove(move, moveIndex);
+            if (evalMakeMove)
+            {
+                Evaluator?.MakeMove(move, moveIndex, false);
+            }
             Game.MakeMove(move);
             Game.CheckBoardState(move);
         }

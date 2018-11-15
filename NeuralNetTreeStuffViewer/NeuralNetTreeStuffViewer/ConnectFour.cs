@@ -15,6 +15,8 @@ namespace NeuralNetTreeStuffViewer
 
         public ConnectFour Game { get { return this; } }
 
+        public int TotalAmountOfMoves => Width;
+
         My2dArray<Players> board;
         int[] columnHeights;
         int placesRemaining;
@@ -145,6 +147,23 @@ namespace NeuralNetTreeStuffViewer
                 }
             }
             return BoardState.Continue;
+        }
+
+        public BoardState CheckBoardState()
+        {
+            BoardState boardState = BoardState.Continue;
+            for (int i = 0; i < columnHeights.Length; i++)
+            {
+                if (columnHeights[i] > 0)
+                {
+                    boardState = CheckBoardState(new GameMove<int>(i, board[i, columnHeights[i]]));
+                    if(boardState != BoardState.Continue)
+                    {
+                        return boardState;
+                    }
+                }
+            }
+            return boardState;
         }
 
 
@@ -341,6 +360,33 @@ namespace NeuralNetTreeStuffViewer
 
         public void InitializeStaticVariables()
         {
+        }
+        public void DeserializeInit()
+        {
+        }
+
+        public bool BoardEquals(ITurnBasedGame<ConnectFour, int> other)
+        {
+            ConnectFour otherConnectFour = (ConnectFour)other;
+            if(placesRemaining == otherConnectFour.placesRemaining && Width == otherConnectFour.Width && Height == otherConnectFour.Height)
+            {
+                for(int x = 0; x < columnHeights.Length; x++)
+                {
+                    if(columnHeights[x] != otherConnectFour.columnHeights[x])
+                    {
+                        return false;
+                    }
+                    for(int y = columnHeights[x]; y >= 0; y--)
+                    {
+                        if(board[x,y] != otherConnectFour.board[x, y])
+                        {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
+            return false;
         }
     }
 }

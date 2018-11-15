@@ -19,19 +19,47 @@ namespace NeuralNetTreeStuffViewer
         public int AmountOfSecondPlayerCheckers { get { return secondCheckers.Count; } }
         public int AmountOfFirstPlayerKings { get; private set; }
         public int AmountOfSecondPlayerKings { get; private set; }
+
+        static int totalAmountOfMoves = -1;
+
+        public int TotalAmountOfMoves
+        {
+            get
+            {
+                if (totalAmountOfMoves < 0)
+                {
+                    totalAmountOfMoves = ((board.YLength - 1) * board.YLength + (board.XLength - 1)) / 2 * 8;
+                    totalAmountOfMoves += 9;//8 for bools 1 for pass
+                }
+                return totalAmountOfMoves;
+            }
+        }
+        public static int StatocTotalAmountOfMoves
+        {
+            get
+            {
+                if (totalAmountOfMoves < 0)
+                {
+                    totalAmountOfMoves = (7 * 8 + 7) / 2 * 8;
+                    totalAmountOfMoves += 9;//8 for bools 1 for pass
+                }
+                return totalAmountOfMoves;
+            }
+        }
+
         static My2dArray<CheckersPiece> startBoard;
         static Dictionary<bool, BoardPosition> frontDirections;
         [JsonProperty]
         My2dArray<CheckersPiece> board;
-        [JsonProperty]
+        [JsonIgnore]
         HashSet<CheckersPiece> firstCheckers;
-        [JsonProperty]
+        [JsonIgnore]
         HashSet<CheckersPiece> secondCheckers;
         [JsonProperty]
         Dictionary<Players, (BoardPosition? pos, Dictionary<int, CheckersMove> moves)> forceMultiJump;
         [JsonProperty]
         BoardState? finishedGame;
-        
+
         public event EventHandler<GameButtonArgs<(GameMove<CheckersMove> move, bool done)>> MoveMade;
 
         public static void Copy(Checkers board, Checkers newBoard)
@@ -246,45 +274,47 @@ namespace NeuralNetTreeStuffViewer
         public void GetMoves(CheckersPiece piece, Dictionary<int, CheckersMove> moves, Dictionary<int, CheckersMove> forcedMoves)
         {
             Players currentP = piece.Player;
-            Players oppositeP = GetOpposiePlayer(currentP);
-
-            foreach (var d in frontDirections)
+            if (currentP != Players.None)
             {
-                BoardPosition direction = d.Value;
-                if (currentP == Players.OpponentOrSecond)
-                {
-                    direction = new BoardPosition(direction.X, -direction.Y);
-                }
-                for (int i = 0; i < 2; i++)
-                {
-                    if (i > 0)
-                    {
-                        if (!piece.IsKing)
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            direction = new BoardPosition(direction.X, -direction.Y);
-                        }
-                    }
-                    BoardPosition adjasentTile = piece.Position + direction;
-                    if (board.InArray(adjasentTile))
-                    {
-                        if (forcedMoves.Count <= 0 && board[adjasentTile].Player == Players.None)
-                        {
-                            CheckersMove move = new CheckersMove(piece.Position, d.Key, false, i > 0, currentP);
-                            moves.Add(GetMoveUniqueIdentifier(move), move);
-                        }
-                        BoardPosition jumpTile = piece.Position + (direction * 2);
-                        if (board.InArray(jumpTile) && board[adjasentTile].Player == oppositeP && board[jumpTile].Player == Players.None)
-                        {
-                            CheckersMove move = new CheckersMove(piece.Position, d.Key, true, i > 0, currentP);
-                            forcedMoves.Add(GetMoveUniqueIdentifier(move), move);
-                        }
-                    }
-                }
+                Players oppositeP = GetOpposiePlayer(currentP);
 
+                foreach (var d in frontDirections)
+                {
+                    BoardPosition direction = d.Value;
+                    if (currentP == Players.OpponentOrSecond)
+                    {
+                        direction = new BoardPosition(direction.X, -direction.Y);
+                    }
+                    for (int i = 0; i < 2; i++)
+                    {
+                        if (i > 0)
+                        {
+                            if (!piece.IsKing)
+                            {
+                                break;
+                            }
+                            else
+                            {
+                                direction = new BoardPosition(direction.X, -direction.Y);
+                            }
+                        }
+                        BoardPosition adjasentTile = piece.Position + direction;
+                        if (board.InArray(adjasentTile))
+                        {
+                            if (forcedMoves.Count <= 0 && board[adjasentTile].Player == Players.None)
+                            {
+                                CheckersMove move = new CheckersMove(piece.Position, d.Key, false, i > 0, currentP);
+                                moves.Add(GetMoveUniqueIdentifier(move), move);
+                            }
+                            BoardPosition jumpTile = piece.Position + (direction * 2);
+                            if (board.InArray(jumpTile) && board[adjasentTile].Player == oppositeP && board[jumpTile].Player == Players.None)
+                            {
+                                CheckersMove move = new CheckersMove(piece.Position, d.Key, true, i > 0, currentP);
+                                forcedMoves.Add(GetMoveUniqueIdentifier(move), move);
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -409,8 +439,11 @@ namespace NeuralNetTreeStuffViewer
             return true;
             */
         }
-
         public BoardState CheckBoardState(GameMove<CheckersMove> lastMove)
+        {
+            return CheckBoardState();
+        }
+        public BoardState CheckBoardState()
         {
             if (firstCheckers.Count > 0 ^ secondCheckers.Count > 0)
             {
@@ -650,7 +683,7 @@ namespace NeuralNetTreeStuffViewer
             }
         }
 
-        bool CheckerPieceSquare(int x, int y)
+        public static bool CheckerPieceSquare(int x, int y)
         {
             return !(x % 2 == 1 ^ y % 2 == 1);
         }
@@ -698,7 +731,7 @@ namespace NeuralNetTreeStuffViewer
                 }
             }
 
-            if(currentPlayer == Players.YouOrFirst)
+            if (currentPlayer == Players.YouOrFirst)
             {
                 arr[arrIndex] = 1;
             }
@@ -712,10 +745,69 @@ namespace NeuralNetTreeStuffViewer
 
         public void InitializeStaticVariables()
         {
-            if(startBoard == null)
+            if (startBoard == null)
             {
                 SetStartBoard();
             }
+        }
+
+        public void DeserializeInit()
+        {
+            firstCheckers = new HashSet<CheckersPiece>();
+            secondCheckers = new HashSet<CheckersPiece>();
+            for (int i = 0; i < board.Array.Length; i++)
+            {
+                if (board.Array[i].Player == Players.YouOrFirst)
+                {
+                    firstCheckers.Add(board.Array[i]);
+                }
+                else if (board.Array[i].Player == Players.OpponentOrSecond)
+                {
+                    secondCheckers.Add(board.Array[i]);
+                }
+            }
+        }
+
+        public bool BoardEquals(ITurnBasedGame<Checkers, CheckersMove> other)
+        {
+            Checkers otherCheckers = (Checkers)other;
+            if (AmountOfFirstPlayerCheckers == otherCheckers.AmountOfFirstPlayerCheckers && AmountOfSecondPlayerCheckers == otherCheckers.AmountOfSecondPlayerCheckers &&
+                AmountOfFirstPlayerKings == otherCheckers.AmountOfFirstPlayerKings && AmountOfSecondPlayerKings == otherCheckers.AmountOfSecondPlayerKings)
+            {
+                if (NullableBoardPosEquals(forceMultiJump[Players.YouOrFirst].pos, otherCheckers.forceMultiJump[Players.YouOrFirst].pos)
+                    && NullableBoardPosEquals(forceMultiJump[Players.OpponentOrSecond].pos, otherCheckers.forceMultiJump[Players.OpponentOrSecond].pos))
+                {
+                    for (int x = 0; x < board.XLength; x++)
+                    {
+                        for (int y = 0; y < board.YLength; y++)
+                        {
+                            if (!CheckerPieceSquare(x, y))
+                            {
+                                continue;
+                            }
+                            if (!board[x, y].Equals(otherCheckers.board[x, y]))
+                            {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        bool NullableBoardPosEquals(BoardPosition? left, BoardPosition? right)
+        {
+            if (left.HasValue == right.HasValue)
+            {
+                if (left != null)
+                {
+                    return left.Value == right.Value;
+                }
+                return true;
+            }
+            return false;
         }
     }
     public class CheckersPiece
@@ -766,6 +858,11 @@ namespace NeuralNetTreeStuffViewer
                 inputIndex += 2;
             }
         }
+
+        public bool Equals(CheckersPiece other)
+        {
+            return Player == other.Player && IsKing == other.IsKing && Position == other.Position;
+        }
     }
     public struct CheckersMove
     {
@@ -798,13 +895,18 @@ namespace NeuralNetTreeStuffViewer
         {
             if (Pass)
             {
-                return -1;
+                return 0;
             }
             else
             {
                 int boardSize = 8;
                 int boolsVariation = 8;
-                int returnInt = (Position.Y * boardSize + Position.X) * boolsVariation;
+                int offset = 0;
+                if (!Checkers.CheckerPieceSquare(0, 0))
+                {
+                    offset++;
+                }
+                int returnInt = (Position.Y * boardSize + Position.X + offset) / 2 * boolsVariation;
                 if (Left)
                 {
                     returnInt += 1;
@@ -817,6 +919,7 @@ namespace NeuralNetTreeStuffViewer
                 {
                     returnInt += 4;
                 }
+                returnInt += 1;//pass
                 return returnInt;
             }
         }

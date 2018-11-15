@@ -1,6 +1,7 @@
 ﻿using NeuralNetTreeStuffViewer.MinMaxAlg;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -83,7 +84,7 @@ namespace NeuralNetTreeStuffViewer
                     {
                         if (DebugStringPath != null)
                         {
-                            //File.WriteAllText(DebugStringPath, nextMoveChild.Parent.DebugString);
+                            File.WriteAllText(DebugStringPath, nextMoveChild.Parent.DebugString);
                         }
 
                         if (nextMoveChild.MoveIndex == null)
@@ -97,6 +98,10 @@ namespace NeuralNetTreeStuffViewer
                     {
                         moveIndex = new MoveIndex<T1>(m.Key, m.Value);
                     }
+                    Stopwatch stopwatch = new Stopwatch();
+                    stopwatch.Restart();
+                    while (stopwatch.ElapsedMilliseconds < 500) { }
+                    stopwatch.Stop();
                 }
 
                 if (moveIndex != null)
@@ -104,10 +109,10 @@ namespace NeuralNetTreeStuffViewer
                     MakeMoveOnGame(new GameMove<T1>(moveIndex.Value.Move, GetAiPlayer()), moveIndex.Value.Index);
                     Players humanPlayer = AiFirst ? Players.OpponentOrSecond : Players.YouOrFirst;
                     var moves = Game.AvailableMoves(humanPlayer);
-                    if (moves.Count == 1 && moves.ContainsKey(-1))
+                    if (moves.Count == 1 && moves.ContainsKey(0))
                     {
-                        T1 move = moves[-1];
-                        MakeMoveOnGame(new GameMove<T1>(move, humanPlayer), -1);
+                        T1 move = moves[0];
+                        MakeMoveOnGame(new GameMove<T1>(move, humanPlayer), 0);
                         return AIMakeMove();
                     }
                     return moveIndex.Value.Move;

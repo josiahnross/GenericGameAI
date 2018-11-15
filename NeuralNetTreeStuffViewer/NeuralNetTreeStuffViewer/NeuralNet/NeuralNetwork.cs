@@ -1,4 +1,5 @@
 ﻿using NeuralNetTreeStuffViewer.NeuralNet.ActivationFunctions;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,8 +10,24 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
 {
     public class NeuralNetwork
     {
+        [JsonIgnore]
+        public Layer this [int i]
+        {
+            get
+            {
+                return Layers[i];
+            }
+        }
+        [JsonProperty]
         public Layer[] Layers { get; private set; }
+        [JsonProperty]
         Neuron biasNeuron;
+
+        [JsonConstructor]
+        private NeuralNetwork()
+        {
+
+        }
         public NeuralNetwork(ActivationFunction activationFunction, Func<double, double, double> random, params int[] layerNeurons)
         {
             if (layerNeurons.Length < 2) { throw new IndexOutOfRangeException(); }
@@ -27,6 +44,37 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
                 if(layerNeurons[i] <= 0) { throw new IndexOutOfRangeException(); }
                 Layers[i] = new Layer(layerNeurons[i], previous, activationFunction, random, biasNeuron);
             }
+        }
+
+        public string Serialize()
+        {
+            return JsonConvert.SerializeObject(this);
+        }
+        public static NeuralNetwork Deserialize(string json)
+        {
+            var net = JsonConvert.DeserializeObject<NeuralNetwork>(json);
+
+            for(int l = 1; l < net.Layers.Length; l++)
+            {
+                for(int n = 0; n < net[l].Neurons.Length; n++)
+                {
+                    net[l][n].GetActivationFunctionFromInfo();
+                    for(int d = 0; d < net[l][n].Dendrites.Count; d++)
+                    {
+                        if(d < net[l-1].Neurons.Length)
+                        {
+                            net[l][n].Dendrites[d].Previous = net[l - 1][d];
+                        }
+                        else
+                        {
+                            net[l][n].Dendrites[d].Previous = net.biasNeuron;
+                        }
+                    }
+                }
+            }
+            net.biasNeuron.GetActivationFunctionFromInfo();
+
+            return net;
         }
 
         public double[] Compute(double[] input)

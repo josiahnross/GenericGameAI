@@ -18,7 +18,27 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
         {
             if (currentDepth >= depth || currentNode.AvailableMoves == null || currentNode.AvailableMoves.Count == 0)
             {
-                currentNode.Value = currentNode.CurrentState.EvaluateCurrentState(Funcs.GetPlayerFromBool(currentNode.MaxTurn));
+                BoardState boardState = BoardState.Continue;
+                if (currentNode.MoveIndex != null)
+                {
+                    boardState = currentNode.CurrentState.Game.CheckBoardState(new GameMove<T1>(currentNode.MoveIndex.Value.Move, Funcs.GetPlayerFromBool(!currentNode.MaxTurn)));
+                }
+                if (boardState == BoardState.Continue)
+                {
+                    currentNode.Value = currentNode.CurrentState.EvaluateCurrentState(Funcs.GetPlayerFromBool(currentNode.MaxTurn));
+                }
+                else if (boardState == BoardState.Draw)
+                {
+                    currentNode.Value = 0;
+                }
+                else if (boardState == BoardState.Loss)
+                {
+                    currentNode.Value = double.MinValue;
+                }
+                else if (boardState == BoardState.Win)
+                {
+                    currentNode.Value = double.MaxValue;
+                }
                 if (currentNode.Parent != null)
                 {
                     currentNode.Parent.ExploredChildren++;
@@ -27,7 +47,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
             }
             else
             {
-                foreach(var move in currentNode.AvailableMoves)
+                foreach (var move in currentNode.AvailableMoves)
                 {
                     if (!currentNode.ExploredNode)
                     {
@@ -55,7 +75,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
         }
         private static void UpdateParentNodes(MinMaxNode<T, T1> currentNode, MinMaxNode<T, T1> childNode)
         {
-            if(currentNode.ExploredNode)
+            if (currentNode.ExploredNode)
             {
                 //for (int i = 0; i < currentNode.Children.Count; i++)
                 //{
@@ -78,7 +98,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
             }
             else
             {
-                if(currentNode.BetterMinMaxValue(childNode.Value))
+                if (currentNode.BetterMinMaxValue(childNode.Value))
                 {
                     currentNode.MinimumOrMaximumValue = childNode.Value;
                     currentNode.ExploredNode = currentNode.AlphaBetaExplored();

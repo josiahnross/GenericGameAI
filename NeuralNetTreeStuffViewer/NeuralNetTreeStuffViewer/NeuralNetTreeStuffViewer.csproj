@@ -5,7 +5,7 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{A1300E6D-14CB-432E-981C-E26B5B3D04C9}</ProjectGuid>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <RootNamespace>NeuralNetTreeStuffViewer</RootNamespace>
     <AssemblyName>NeuralNetTreeStuffViewer</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
@@ -30,6 +30,9 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Newtonsoft.Json, Version=11.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -80,6 +83,9 @@
     <Compile Include="NeuralNetGameTrainer.cs" />
     <Compile Include="NeuralNet\ActivationFunctions\ActivationFunction.cs" />
     <Compile Include="NeuralNet\ActivationFunctions\IdentityActivationFunction.cs" />
+    <Compile Include="NeuralNet\ActivationFunctions\Sigmoid.cs" />
+    <Compile Include="NeuralNet\ActivationFunctions\TanH.cs" />
+    <Compile Include="NeuralNet\Backpropagation.cs" />
     <Compile Include="NeuralNet\Dendrite.cs" />
     <Compile Include="NeuralNet\Extenstions.cs" />
     <Compile Include="NeuralNet\Layer.cs" />

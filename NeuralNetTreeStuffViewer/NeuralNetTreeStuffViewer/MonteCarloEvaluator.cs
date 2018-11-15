@@ -17,7 +17,8 @@ namespace NeuralNetTreeStuffViewer
         double explorationParam;
         int startSimulations;
         int simulationsPerTurn;
-
+        int maxDepth;
+        bool checkForLoops;
         public ITurnBasedGame<T, T1> Game { get { return CurrentNode.CurrentState; } }
 
         private MonteCarloEvaluator(MonteCarloEvaluator<T, T1> other)
@@ -28,6 +29,8 @@ namespace NeuralNetTreeStuffViewer
             startSimulations = other.startSimulations;
             simulationsPerTurn = other.simulationsPerTurn;
             tree = other.tree;
+            maxDepth = other.maxDepth;
+            checkForLoops = other.checkForLoops;
             CurrentNode = other.CurrentNode;
         }
 
@@ -36,17 +39,19 @@ namespace NeuralNetTreeStuffViewer
             return new MonteCarloEvaluator<T, T1>(this);
         }
         public MonteCarloEvaluator(Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam,
-            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc, int startSimulations, int simulationsPerTurn, ITurnBasedGame<T, T1> game, Players startPlayer = Players.YouOrFirst)
+            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc, int startSimulations, int simulationsPerTurn, 
+            ITurnBasedGame<T, T1> game, int maxDepth, bool checkForLoops, Players startPlayer = Players.YouOrFirst)
         {
             this.selectionFunction = selectionFunction;
             this.chooseMoveFunc = chooseMoveFunc;
             this.explorationParam = explorationParam;
             this.startSimulations = startSimulations;
             this.simulationsPerTurn = simulationsPerTurn;
-
-            tree = new MonteCarloTree<T, T1>(game, selectionFunction, explorationParam, chooseMoveFunc, startPlayer);
+            this.maxDepth = maxDepth;
+            this.checkForLoops = checkForLoops;
+            tree = new MonteCarloTree<T, T1>(game, selectionFunction, explorationParam, chooseMoveFunc, maxDepth, startPlayer);
             CurrentNode = tree.Root;
-            tree.RunMonteCarloSims(startSimulations, CurrentNode);
+            tree.RunMonteCarloSims(startSimulations, checkForLoops, CurrentNode);
         }
 
 
@@ -55,7 +60,7 @@ namespace NeuralNetTreeStuffViewer
             var copy = new MonteCarloEvaluator<T, T1>(this);
             copy.tree = null;
             copy.CurrentNode = null;
-            copy.tree = new MonteCarloTree<T, T1>(state, selectionFunction, explorationParam, chooseMoveFunc, player);
+            copy.tree = new MonteCarloTree<T, T1>(state, selectionFunction, explorationParam, chooseMoveFunc, maxDepth, player);
             copy.CurrentNode = copy.tree.Root;
             return copy;
         }
@@ -67,7 +72,7 @@ namespace NeuralNetTreeStuffViewer
 
         public double EvaluateCurrentState(Players player)
         {
-            tree.RunMonteCarloSims(simulationsPerTurn, CurrentNode);
+            tree.RunMonteCarloSims(simulationsPerTurn, checkForLoops, CurrentNode);
             if (CurrentNode.EndOfGame)
             {
                 if (CurrentNode.GameInfo.Player1Wins > CurrentNode.GameInfo.Player2Wins)
@@ -85,8 +90,8 @@ namespace NeuralNetTreeStuffViewer
 
         public double EvaluateCurrentState(ITurnBasedGame<T, T1> state, Players player)
         {
-            MonteCarloTree<T, T1> stateTree = new MonteCarloTree<T, T1>(state, selectionFunction, explorationParam, chooseMoveFunc, player);
-            stateTree.RunMonteCarloSims(simulationsPerTurn, stateTree.Root);
+            MonteCarloTree<T, T1> stateTree = new MonteCarloTree<T, T1>(state, selectionFunction, explorationParam, chooseMoveFunc, maxDepth, player);
+            stateTree.RunMonteCarloSims(simulationsPerTurn, checkForLoops, stateTree.Root);
             if (stateTree.Root.EndOfGame)
             {
                 if (stateTree.Root.GameInfo.Player1Wins > stateTree.Root.GameInfo.Player2Wins)
@@ -102,7 +107,7 @@ namespace NeuralNetTreeStuffViewer
             return (stateTree.Root.GameInfo.Player1Wins - stateTree.Root.GameInfo.Player2Wins);
         }
 
-        public void MakeMove(GameMove<T1> move, int moveIndex)
+        public void MakeMove(GameMove<T1> move, int moveIndex, bool evalMakeMove = true)
         {
             if (CurrentNode.Children.ContainsKey(moveIndex))
             {
@@ -112,7 +117,7 @@ namespace NeuralNetTreeStuffViewer
             {
                 while (!CurrentNode.Children.ContainsKey(moveIndex))
                 {
-                    tree.RunMonteCarloSims(1, CurrentNode);
+                    tree.RunMonteCarloSims(1, checkForLoops, CurrentNode);
                 }
                 CurrentNode = CurrentNode.Children[moveIndex];
             }

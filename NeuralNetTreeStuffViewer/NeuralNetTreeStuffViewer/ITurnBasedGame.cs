@@ -7,29 +7,33 @@ using System.Windows.Forms;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public interface ITurnBasedGame<T, T1>
+    public interface ITurnBasedGame<TSelf, TMove>
     {
-        T Game { get; }
-        T Copy();
-        ITurnBasedGame<T, T1> CopyInterface();
-        void Copy(T newBoard);
+        TSelf Game { get; }
+        TSelf Copy();
+        ITurnBasedGame<TSelf, TMove> CopyInterface();
+        void Copy(TSelf newBoard);
         void Restart();
-        BoardState PlayerMakeMove(GameMove<T1> move);
-        bool IsLegalMove(GameMove<T1> move);
+        BoardState PlayerMakeMove(GameMove<TMove> move);
+        bool IsLegalMove(GameMove<TMove> move);
 
-        void MakeMove(GameMove<T1> move);
+        void MakeMove(GameMove<TMove> move);
 
-        BoardState CheckBoardState(GameMove<T1> lastMove);
+        BoardState CheckBoardState(GameMove<TMove> lastMove);
+        BoardState CheckBoardState();
 
-        Dictionary<int, T1> AvailableMoves(Players player);
+        Dictionary<int, TMove> AvailableMoves(Players player);
         
         void DisplayGame(Panel panel);
         void EnableDisplay(bool enable);
-        void ComputerMakeMove(T1 move);
-        int GetMoveUniqueIdentifier(T1 move);
-        event EventHandler<GameButtonArgs<(GameMove<T1> move, bool done)>> MoveMade;
+        void ComputerMakeMove(TMove move);
+        int GetMoveUniqueIdentifier(TMove move);
+        event EventHandler<GameButtonArgs<(GameMove<TMove> move, bool done)>> MoveMade;
         double[] GetInputs(Players currentPlayer);
         void InitializeStaticVariables();
+        void DeserializeInit();
+        bool BoardEquals(ITurnBasedGame<TSelf, TMove> other);
+        int TotalAmountOfMoves { get; }
     }
     public struct BoardInfo
     {

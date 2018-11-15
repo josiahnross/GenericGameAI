@@ -6,41 +6,43 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer.NeuralNet.ActivationFunctions
 {
-    public class IdentityActivationFunction : ActivationFunction
+    public class TanH : ActivationFunction
     {
         double min;
         double max;
 
-        public override bool CanUseOutputDerivative => false;
+        public override bool CanUseOutputDerivative => true;
 
         public override double Min { get { return min; } protected set { min = value; } }
 
         public override double Max { get { return max; } protected set { max = value; } }
 
-        public IdentityActivationFunction(double min, double max)
+        public TanH(double min, double max)
         {
             this.min = min;
             this.max = max;
         }
 
-        public override double Derivative(double x)
-        {
-            return 1;
-        }
-
         public override double Function(double x)
         {
-            return x;
+            double eToX = Math.Pow(Math.E, x);
+            double eToNegX = Math.Pow(Math.E, -x);
+            return (eToX - eToNegX) / (eToX + eToNegX);
+        }
+
+        public override double Derivative(double x)
+        {
+            return 1 - Math.Pow(Function(x), 2);
         }
 
         public override double OutputDerivative(double y)
         {
-            throw new NotImplementedException();
+            return 1 - Math.Pow(y,2);
         }
 
         public override ActivationFunction Copy()
         {
-            return new IdentityActivationFunction(Min, Max);
+            return new TanH(Min, Max);
         }
     }
 }

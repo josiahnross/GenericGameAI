@@ -11,8 +11,8 @@ namespace NeuralNetTreeStuffViewer
         where T1 : struct
     {
         IEvaluateableTurnBasedGame<T, T1> parentEval;
-        Func<ITurnBasedGame<T, T1>, double> evaluateFunc;
-        public JustEvaluator(Func<ITurnBasedGame<T, T1>, double> evaluateFunc, IEvaluateableTurnBasedGame<T, T1> parentEval)
+        Func<ITurnBasedGame<T, T1>, Players, double> evaluateFunc;
+        public JustEvaluator(Func<ITurnBasedGame<T, T1>, Players, double> evaluateFunc, IEvaluateableTurnBasedGame<T, T1> parentEval)
         {
             if(evaluateFunc == null)
             {
@@ -41,16 +41,20 @@ namespace NeuralNetTreeStuffViewer
 
         public double EvaluateCurrentState(Players player)
         {
-            return evaluateFunc.Invoke(Game);
+            return evaluateFunc.Invoke(Game, player);
         }
 
         public double EvaluateCurrentState(ITurnBasedGame<T, T1> state, Players player)
         {
-            return evaluateFunc.Invoke(state);
+            return evaluateFunc.Invoke(state, player);
         }
 
-        public void MakeMove(GameMove<T1> move, int moveIndex)
+        public void MakeMove(GameMove<T1> move, int moveIndex, bool evalMakeMove = true)
         {
+            if (evalMakeMove)
+            {
+                parentEval.MakeMove(move, moveIndex, false);
+            }
         }
 
         public void Restart()

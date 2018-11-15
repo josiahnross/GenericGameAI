@@ -1,9 +1,12 @@
 ﻿using NeuralNetTreeStuffViewer.MinMaxAlg;
+using NeuralNetTreeStuffViewer.NeuralNet;
+using NeuralNetTreeStuffViewer.NeuralNet.ActivationFunctions;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
@@ -20,6 +23,7 @@ namespace NeuralNetTreeStuffViewer
         public Form1()
         {
             InitializeComponent();
+            ActivationFunction.Init();
         }
         MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition> ticTacToeEvaluator;
         MinMaxTurnBasedGameInterface<ConnectFour, int> connectFourEvaluator;
@@ -27,35 +31,43 @@ namespace NeuralNetTreeStuffViewer
 
 
         string debugInfoPath = "debugInfo.txt";
+        string netPath = "gen3Net.txt";
+        string policyNetPath = "policyGen0Net.txt";
         bool AIFirst = false;
+        NeuralNetwork checkersNet;
+        public double NeuralNetEval(ITurnBasedGame<Checkers, CheckersMove> game, Players player)
+        {
+            double[] input = game.GetInputs(player);
+            return checkersNet.Compute(input)[0];
+        }
         private void Form1_Load(object sender, EventArgs e)
         {
             Funcs.Random = new Random(3);
 
-
+            //Chess chess = new Chess();
             if (false)
             {
                 TickTacToe tickTacToe = new TickTacToe(3);
                 tickTacToe.DisplayGame(gamePanel);
-                ticTacToeEvaluator = new MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>(new TickTacToe(3), new TickTacToe(3), AIFirst,9, debugInfoPath);
-                ticTacToeEvaluator.SetEvaluator(new MonteCarloEvaluator<TickTacToe, BoardPosition>(MonteCarloTree<TickTacToe, BoardPosition>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, ticTacToeEvaluator.Game));
+                ticTacToeEvaluator = new MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>(new TickTacToe(3), new TickTacToe(3), AIFirst, 9, debugInfoPath);
+                ticTacToeEvaluator.SetEvaluator(new MonteCarloEvaluator<TickTacToe, BoardPosition>(MonteCarloTree<TickTacToe, BoardPosition>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, ticTacToeEvaluator.Game, int.MaxValue, false));
             }
             else if (false)
             {
                 ConnectFour connectFour = new ConnectFour(7, 6);
                 connectFour.DisplayGame(gamePanel);
                 connectFourEvaluator = new MinMaxTurnBasedGameInterface<ConnectFour, int>(new ConnectFour(7, 6), connectFour, AIFirst, 3, debugInfoPath);
-                connectFourEvaluator.SetEvaluator(new MonteCarloEvaluator<ConnectFour, int>(MonteCarloTree<ConnectFour, int>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, connectFourEvaluator.Game));
+                connectFourEvaluator.SetEvaluator(new MonteCarloEvaluator<ConnectFour, int>(MonteCarloTree<ConnectFour, int>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, connectFourEvaluator.Game, int.MaxValue, false));
             }
-            else if(false)
+            else if (false)
             {
                 Checkers checkers = new Checkers();
                 checkers.DisplayGame(gamePanel);
                 checkers.GetInputs(Players.YouOrFirst);
                 IEvaluateableTurnBasedGame<Checkers, CheckersMove> eval = null;
                 uint minMaxDepth;
-                bool monteCarloEval = false;
-                if(monteCarloEval)
+                bool monteCarloEval = true;
+                if (monteCarloEval)
                 {
                     minMaxDepth = 3;
                 }
@@ -65,35 +77,163 @@ namespace NeuralNetTreeStuffViewer
                 }
                 if (true)
                 {
-                    checkersEvaluator = new MinMaxTurnBasedGameInterface<Checkers, CheckersMove>(new Checkers(), checkers, 
+                    checkersEvaluator = new MinMaxTurnBasedGameInterface<Checkers, CheckersMove>(new Checkers(), checkers,
                         AIFirst, minMaxDepth, debugInfoPath);
                 }
-                if (false)
+                if (monteCarloEval)
                 {
                     eval = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
-                    Math.Sqrt(2), RandomMoveSelectionFunc, 50, 25, checkersEvaluator.Game);
+                    Math.Sqrt(2), RandomMoveSelectionFunc, 50, 25, checkersEvaluator.Game, int.MaxValue, false);
                 }
                 else
                 {
-                    eval = new JustEvaluator<Checkers, CheckersMove>(g => (g.Game.AmountOfFirstPlayerCheckers - g.Game.AmountOfSecondPlayerCheckers + ((g.Game.AmountOfFirstPlayerKings - g.Game.AmountOfSecondPlayerKings) * 1.5f)), checkersEvaluator);
+                    eval = new JustEvaluator<Checkers, CheckersMove>((g, p) => (g.Game.AmountOfFirstPlayerCheckers - g.Game.AmountOfSecondPlayerCheckers + ((g.Game.AmountOfFirstPlayerKings - g.Game.AmountOfSecondPlayerKings) * 1.5f)), checkersEvaluator);
                 }
                 checkersEvaluator.SetEvaluator(eval);
             }
+            else if (true)
+            {
+                int maxDepth = 100;
+
+                string path = "inputOutputs4.txt";
+                string debugPath = "debugInputOutputs4.txt";
+                NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 50, 25, 10, 5, 1);
+                Backpropagation backProp = new Backpropagation(net);
+                NeuralNetwork policyNet = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 100, 150, 200, Checkers.StatocTotalAmountOfMoves);
+                Backpropagation policyBackProp = new Backpropagation(policyNet, PolicyError);
+                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(backProp, policyBackProp, path, debugPath);
+
+                var monteCarloEvaluator = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
+                 Math.Sqrt(2), trainer.NetChooseMoveWithValue, 0, 8, new Checkers(), maxDepth, true);//trainer.NetChooseMove
+                MinMaxEvaluator<Checkers, CheckersMove> minMaxEvaluator = new MinMaxEvaluator<Checkers, CheckersMove>(new Checkers(), monteCarloEvaluator, 1, null);
+                double maxOut = 10;
+                //if (false)
+                //{
+                    trainer.LoadNeuralNet("gen2Net.txt");
+                    trainer.GetTrainingInputs(new Checkers(), 30, maxDepth);
+                    trainer.GetTrainingOutputs(minMaxEvaluator, 40, path, debugPath);
+                    trainer.PruneInputOutputs(maxOut);
+                    //trainer.GetPolicyOutputs(0, path, debugPath);
+                    trainer.StoreInputOutputs(path);
+                    trainer.StoreDebugInputOutputs(debugPath);
+                //}
+                //else if (true)
+                //{
+                    //trainer.LoadNeuralNet(netPath);
+                    trainer.TrainNeuralNet(3000, .0005f, 0.1f, 0, 1, 0, maxOut, true, false, netPath);
+                //}
+                if(false)
+                {
+                    trainer.LoadPolicyNeualNet(policyNetPath);
+                    trainer.TrainNeuralNet(25, .001f, 0.06, 0, 1, 0, 1, false, true, policyNetPath);
+                }
+            }
+            else if (false)
+            {
+                int maxDepth = 100;
+
+                string netPath = "netPgen0";
+                string path = "inputOutputsP.txt";
+                string debugPath = "debugInputOutputsP.txt";
+                Checkers temp = new Checkers();
+                NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 150, 100, 200, temp.TotalAmountOfMoves + 1);
+                Backpropagation backProp = new Backpropagation(net, FirstIndexAverageError);
+                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(backProp, null, path, debugPath);
+
+                if (false)
+                {
+                    trainer.GetTrainingInputs(new Checkers(), 50, maxDepth);
+                    trainer.GetValuePolicyTrainingOutputs(maxDepth, new Checkers(), false, 50, path, debugPath);
+                    trainer.PruneInputOutputs(50);
+                    trainer.StoreInputOutputs(path);
+                    trainer.StoreDebugInputOutputs(debugPath);
+                }
+                else
+                {
+                    //trainer.LoadNeuralNet(netPath);
+                    trainer.TrainNeuralNet(100, .0001f, 0.06, 0, 1, 0, 50, true, false, netPath);
+                }
+            }
+            else if (false)
+            {
+                double[][] inputs = new double[100][];
+                double[][] outputs = new double[100][];
+                for (int i = 0; i < inputs.Length; i++)
+                {
+                    inputs[i] = new double[] { Funcs.Random.NextDouble(0, 1), Funcs.Random.NextDouble(0, 1) };
+                    outputs[i] = new double[] { (Extensions.Distance(0.5, 0.5, inputs[i][0], inputs[i][1]) < .25) ? 1 : 0 };
+                }
+                NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 2, 5, 5, 1);
+                Backpropagation backProp = new Backpropagation(net);
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Reset();
+                stopwatch.Start();
+                while (true)
+                {
+                    Console.SetCursorPosition(0, 0);
+                    /*
+                    for (int i = 0; i < inputs.Length; i++)
+                    {
+                        string line = "(";
+                        for (int j = 0; j < inputs[i].Length; j++)
+                        {
+                            if (j != 0)
+                            {
+                                line += ", ";
+                            }
+                            line += inputs[i][j];
+                        }
+                        line += "): (";
+                        double[] netOut = net.Compute(inputs[i]);
+                        for (int j = 0; j < netOut.Length; j++)
+                        {
+                            if (j != 0)
+                            {
+                                line += ", ";
+                            }
+                            line += Math.Round(netOut[j], 4);
+                        }
+                        line += ")";
+                        Console.SetCursorPosition(0, Console.CursorTop);
+                        Console.Write(line);
+                        Console.WriteLine("                     ");
+                    }
+                    */
+                    double error = 0;
+                    int batchSize = inputs.Length;
+                    for (int i = 0; i < inputs.Length; i += batchSize)
+                    {
+                        var errorI = backProp.TrainBatch(inputs, outputs, .0005f, i, batchSize);
+                        error += errorI.Total;
+                    }
+                    double averageError = error / inputs.Length;
+                    Console.WriteLine(Math.Round(averageError, 10));
+                    Console.WriteLine();
+
+                    if (averageError <= 0.05 || double.IsNaN(averageError) || double.IsPositiveInfinity(averageError) || double.IsNegativeInfinity(averageError))
+                    {
+                        break;
+                    }
+                }
+                stopwatch.Stop();
+                Console.Clear();
+                Console.WriteLine(stopwatch.ElapsedMilliseconds / 1000f);
+            }
             else
             {
-                var monteCarloEvaluator = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
-                    Math.Sqrt(2), RandomMoveSelectionFunc, 0, 25, new Checkers());
-                MinMaxEvaluator<Checkers, CheckersMove> minMaxEvaluator = new MinMaxEvaluator<Checkers, CheckersMove>(new Checkers(), monteCarloEvaluator, 2, null);
+                checkersNet = NeuralNetwork.Deserialize(File.ReadAllText(netPath));
+                Checkers checkers = new Checkers();
+                checkers.DisplayGame(gamePanel);
+                checkers.GetInputs(Players.YouOrFirst);
+                uint minMaxDepth = 6;
+                checkersEvaluator = new MinMaxTurnBasedGameInterface<Checkers, CheckersMove>(new Checkers(), checkers,
+                    AIFirst, minMaxDepth, debugInfoPath);
 
-                string path = "inputOutputs.txt";
-                string debugPath = "debugInputOutputs.txt";
-                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(path, debugPath);//path, debugPath
-                trainer.GetTrainingInputs(new Checkers(), 100);
-                trainer.GetTrainingOutputs(minMaxEvaluator, 50, path, debugPath);
-                trainer.StoreInputOutputs(path);
-                trainer.StoreDebugInputOutputs(debugPath);
+                IEvaluateableTurnBasedGame<Checkers, CheckersMove> eval = new JustEvaluator<Checkers, CheckersMove>(NeuralNetEval, checkersEvaluator);
+                checkersEvaluator.SetEvaluator(eval);
             }
         }
+
 
         public int RandomMoveSelectionFunc(ITurnBasedGame<TickTacToe, BoardPosition> game, Dictionary<int, BoardPosition> avaialableMoves, Players player)
         {
@@ -122,7 +262,51 @@ namespace NeuralNetTreeStuffViewer
         {
         }
 
+        public static ErrorInfo FirstIndexAverageError(NeuralNetwork net, double[][] inputs, double[][] desiredOutputs, double[][] outputs, int startIndex, int count)
+        {
+            double error = 0;
+            for (int i = startIndex; i < count + startIndex && i < inputs.Length; i++)
+            {
+                double[] output = outputs[i];
+                error += Math.Abs(desiredOutputs[i][0] - output[0]);
+            }
+            return new ErrorInfo(error / Math.Min(count, inputs.Length - startIndex), error);
+        }
 
+        public static ErrorInfo PolicyError(NeuralNetwork net, double[][] inputs, double[][] desiredOutputs, double[][] outputs, int startIndex, int count)
+        {
+            double error = 0;
+            for (int i = startIndex; i < count + startIndex && i < inputs.Length; i++)
+            {
+                Players p = Players.YouOrFirst;
+                if (inputs[i][inputs[i].Length - 1] == 0)
+                {
+                    p = Players.OpponentOrSecond;
+                }
+                double[] output = outputs[i];
+                double thisError = 0;
+                int errorCount = 0;
+                for (int j = 0; j < desiredOutputs[i].Length; j++)
+                {
+                    if ((p == Players.YouOrFirst && desiredOutputs[i][j] != -1) || (p == Players.OpponentOrSecond && desiredOutputs[i][j] != 1))
+                    {
+                        thisError += Math.Abs(desiredOutputs[i][j] - output[j]);
+                        errorCount++;
+                    }
+                }
+                error += thisError/errorCount;
+            }
+            return new ErrorInfo(error / Math.Min(count, inputs.Length - startIndex), error);
+        }
+
+        public static bool BetterVal(double current, double newVal, Players p)
+        {
+            if (p == Players.YouOrFirst)
+            {
+                return current < newVal;
+            }
+            return current > newVal;
+        }
     }
     public static class Funcs
     {
@@ -145,11 +329,11 @@ namespace NeuralNetTreeStuffViewer
         }
         public static Players OppositePlayer(Players player)
         {
-            if(player == Players.YouOrFirst)
+            if (player == Players.YouOrFirst)
             {
                 return Players.OpponentOrSecond;
             }
-            else if(player == Players.OpponentOrSecond)
+            else if (player == Players.OpponentOrSecond)
             {
                 return Players.YouOrFirst;
             }
@@ -158,6 +342,6 @@ namespace NeuralNetTreeStuffViewer
         public static Players GetPlayerFromBool(bool player)
         {
             return player ? Players.YouOrFirst : Players.OpponentOrSecond;
-        } 
+        }
     }
 }

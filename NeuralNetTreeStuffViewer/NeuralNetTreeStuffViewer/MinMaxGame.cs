@@ -18,6 +18,8 @@ namespace NeuralNetTreeStuffViewer
         public double[] Nums { get; protected set; }
         public Func<double> RandomFunc { get; private set; }
 
+        public int TotalAmountOfMoves => throw new NotImplementedException();
+
         public MinMaxGame(MinMaxGame game)
         {
             MinIndex = game.MinIndex;
@@ -257,6 +259,21 @@ namespace NeuralNetTreeStuffViewer
         }
 
         public void InitializeStaticVariables()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeserializeInit()
+        {
+            throw new NotImplementedException();
+        }
+
+        public BoardState CheckBoardState()
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool BoardEquals(ITurnBasedGame<MinMaxGame, bool> other)
         {
             throw new NotImplementedException();
         }

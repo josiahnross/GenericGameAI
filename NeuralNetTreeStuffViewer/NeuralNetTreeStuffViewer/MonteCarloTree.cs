@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,33 +15,38 @@ namespace NeuralNetTreeStuffViewer
         Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction;
         public double ExplorationParam { get; }
         Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc;
-        public MonteCarloTree(ITurnBasedGame<T, T1> game, Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam, Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc, Players startPlayer)
+        public int MaxDepth { get; }
+        public MonteCarloTree(ITurnBasedGame<T, T1> game, Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam,
+            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc, int maxDepth, Players startPlayer)
         {
             this.chooseMoveFunc = chooseMoveFunc;
             ExplorationParam = explorationParam;
             this.selectionFunction = selectionFunction;
-            Root = new MonteCarloNode<T, T1>(null, game, (-1, default(T1)), startPlayer);
+            Root = new MonteCarloNode<T, T1>(null, game, (-1, default(T1)), startPlayer, 0);
+            MaxDepth = maxDepth;
             //allNodes = new List<MonteCarloNode<T, T1>>();
             //allNodes.Add(Root);
         }
-        public void RunMonteCarloSims(int amountOfSims, MonteCarloNode<T, T1> startNode = null, HashSet<MonteCarloNode<T,T1>> nodesSet = null)
+        public void RunMonteCarloSims(int amountOfSims, bool checkForLoops, MonteCarloNode<T, T1> startNode = null, HashSet<MonteCarloNode<T, T1>> nodesSet = null)
         {
             if (startNode == null)
             {
                 startNode = Root;
             }
-            if(nodesSet != null && !nodesSet.Contains(Root))
+            if (nodesSet != null && !nodesSet.Contains(Root))
             {
                 nodesSet.Add(Root);
             }
             bool player1Perspective = true;
             for (int i = 0; i < amountOfSims; i++)
             {
-                RunMonteCarloSim(startNode, player1Perspective, nodesSet);
+                RunMonteCarloSim(startNode, player1Perspective, nodesSet, checkForLoops);
+                
                 player1Perspective = !player1Perspective;
             }
         }
-        private void RunMonteCarloSim(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet)
+        
+        private void RunMonteCarloSim(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet, bool checkForLoops)
         {
             var newNode = Selection(node, player1Perspective);
             var contInfo = ContinueWithNode(newNode);
@@ -50,7 +56,7 @@ namespace NeuralNetTreeStuffViewer
                 contInfo = ContinueWithNode(newNode);
                 if (contInfo.continueWithNode && newNode.AvailableMoves.Count > 0 && !newNode.FullyExplored)
                 {
-                    var info = SimulationAndPartialBackprop(newNode, player1Perspective, nodesSet);
+                    var info = SimulationAndPartialBackprop(newNode, player1Perspective, nodesSet, checkForLoops);
                     Backprop(newNode, info);
                 }
                 else
@@ -138,7 +144,7 @@ namespace NeuralNetTreeStuffViewer
                     var childMove = new GameMove<T1>(m.Value, node.Player);
                     state.MakeMove(childMove);
                     Players childPlayer = GetOtherPlayer(node.Player);
-                    var child = new MonteCarloNode<T, T1>(node, state, (m.Key, m.Value), childPlayer);
+                    var child = new MonteCarloNode<T, T1>(node, state, (m.Key, m.Value), childPlayer, node.Depth + 1);
                     if (nodesSet != null)
                     {
                         nodesSet.Add(child);
@@ -178,47 +184,52 @@ namespace NeuralNetTreeStuffViewer
             }
             return null;
         }
-
-        private NodeGameInfo SimulationAndPartialBackprop(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet)
+        private NodeGameInfo SimulationAndPartialBackprop(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet, bool checkForLoops)
         {
             Players player = node.Player;
-            var move = chooseMoveFunc.Invoke(node.CurrentState, node.AvailableMoves, player);
-            ITurnBasedGame<T, T1> state;
-            GameMove<T1> gameMove = new GameMove<T1>(node.AvailableMoves[move], player); ;
-            MonteCarloNode<T, T1> child;
-            if (!node.Children.ContainsKey(move))
+            if (node.AvailableMoves.Count > 0)
             {
-                state = node.CurrentState.Copy();
-                state.MakeMove(gameMove);
-                child = new MonteCarloNode<T, T1>(node, state, (move, gameMove.Move), GetOtherPlayer(player));
-                if (nodesSet != null)
+                var move = chooseMoveFunc.Invoke(node.CurrentState, node.AvailableMoves, player);
+                ITurnBasedGame<T, T1> state;
+                GameMove<T1> gameMove = new GameMove<T1>(node.AvailableMoves[move], player); ;
+                MonteCarloNode<T, T1> child;
+                if (!node.Children.ContainsKey(move))
                 {
-                    nodesSet.Add(child);
-                }
-                node.Children.Add(move, child);
-            }
-            else
-            {
-                child = node.Children[move];
-                state = child.CurrentState;
-            }
-            BoardState boardState = state.CheckBoardState(gameMove);
-            if (boardState == BoardState.Continue && child.TotalAvialableMovesCount != 0)
-            {
-                NodeGameInfo childGameInfo = SimulationAndPartialBackprop(child, player1Perspective, nodesSet);
-                node.GameInfo += childGameInfo;
-                if (child.FullyExplored)
-                {
-                    node.AvailableMoves.Remove(move);
-                    if (node.AvailableMoves.Count == 0)
+                    state = node.CurrentState.Copy();
+                    state.MakeMove(gameMove);
+                    child = new MonteCarloNode<T, T1>(node, state, (move, gameMove.Move), GetOtherPlayer(player), node.Depth + 1);
+                    if (nodesSet != null)
                     {
-                        node.FullyExplored = true;
+                        nodesSet.Add(child);
+                    }
+                    node.Children.Add(move, child);
+                }
+                else
+                {
+                    child = node.Children[move];
+                    state = child.CurrentState;
+                }
+                BoardState boardState = state.CheckBoardState(gameMove);
+                if (boardState == BoardState.Continue && child.TotalAvialableMovesCount != 0 && child.Depth < MaxDepth)
+                {
+                    if (node.Parent == null || !checkForLoops || !IsLoop(child, node.Parent))
+                    {
+                        NodeGameInfo childGameInfo = SimulationAndPartialBackprop(child, player1Perspective, nodesSet, checkForLoops);
+                        node.GameInfo += childGameInfo;
+                        if (child.FullyExplored)
+                        {
+                            node.AvailableMoves.Remove(move);
+                            if (node.AvailableMoves.Count == 0)
+                            {
+                                node.FullyExplored = true;
+                            }
+                        }
+                        return childGameInfo;
                     }
                 }
-                return childGameInfo;
-            }
-            else
-            {
+                child.AvailableMoves.Clear();
+                child.Children.Clear();
+                child.ClearMoves();
                 child.EndOfGame = true;
                 child.FullyExplored = true;
                 node.AvailableMoves.Remove(move);
@@ -232,6 +243,41 @@ namespace NeuralNetTreeStuffViewer
                 child.GameInfo += info;
                 return info;
             }
+            else
+            {
+                node.EndOfGame = true;
+                node.FullyExplored = true;
+                
+                var info = GetGameInfo(BoardState.Continue, player1Perspective);
+                node.GameInfo += info;
+                if (node.Parent != null)
+                {
+                    node.Parent.AvailableMoves.Remove(node.MoveIndex.index);
+                    if (node.AvailableMoves.Count == 0)
+                    {
+                        node.FullyExplored = true;
+                    }
+                    node.Parent.GameInfo += info;
+                }
+                return info;
+            }
+            //else
+            //{
+            
+            //}
+        }
+
+        bool IsLoop(MonteCarloNode<T, T1> node, MonteCarloNode<T, T1> currentNode)
+        {
+            if (node.CurrentState.BoardEquals(currentNode.CurrentState))
+            {
+                return true;
+            }
+            if (currentNode.Parent == null || currentNode.Parent.Parent == null)
+            {
+                return false;
+            }
+            return IsLoop(node, currentNode.Parent.Parent);
         }
 
         private NodeGameInfo GetGameInfo(BoardState boardState, bool player1Perspective)
@@ -308,9 +354,9 @@ namespace NeuralNetTreeStuffViewer
             return player;
         }
 
-        public static (bool continueWithNode, BoardState boardState) ContinueWithNode(MonteCarloNode<T, T1> node)
+        public (bool continueWithNode, BoardState boardState) ContinueWithNode(MonteCarloNode<T, T1> node)
         {
-            bool continueWithNode = node != null && !node.EndOfGame;
+            bool continueWithNode = node != null && !node.EndOfGame && node.Depth < MaxDepth;
             BoardState boardState = BoardState.IllegalMove;
             if (continueWithNode)
             {

@@ -1,4 +1,5 @@
 ﻿using NeuralNetTreeStuffViewer.NeuralNet.ActivationFunctions;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +10,7 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
 {
     public class Layer
     {
+        [JsonIgnore]
         public Neuron this[int i]
         {
             get
@@ -16,6 +18,7 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
                 return Neurons[i];
             }
         }
+        [JsonProperty]
         public Neuron[] Neurons { get; private set; }
         public Layer(int neuronCount, Layer previousLayer, ActivationFunction activationFunction, Func<double, double, double> Random, Neuron biasNeuron)
         {
