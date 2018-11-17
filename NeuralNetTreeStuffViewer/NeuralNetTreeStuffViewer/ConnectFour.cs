@@ -80,9 +80,9 @@ namespace NeuralNetTreeStuffViewer
             return moves;
         }
 
-        public BoardState CheckBoardState(GameMove<int> lastMove)
+        public BoardState CheckBoardState(GameMove<int> lastMove, bool justCheckedAvilableMoves)
         {
-            if(placesRemaining <= 0)
+            if (placesRemaining <= 0)
             {
                 return BoardState.Draw;
             }
@@ -132,7 +132,7 @@ namespace NeuralNetTreeStuffViewer
                         }
                         i++;
                     }
-                    if(length >= 4)
+                    if (length >= 4)
                     {
                         placesRemaining = 0;
                         if (lastMove.Player == Players.YouOrFirst)
@@ -149,15 +149,15 @@ namespace NeuralNetTreeStuffViewer
             return BoardState.Continue;
         }
 
-        public BoardState CheckBoardState()
+        public BoardState CheckBoardState(Players currentPlayer, bool justCheckedAvilableMoves)
         {
             BoardState boardState = BoardState.Continue;
             for (int i = 0; i < columnHeights.Length; i++)
             {
                 if (columnHeights[i] > 0)
                 {
-                    boardState = CheckBoardState(new GameMove<int>(i, board[i, columnHeights[i]]));
-                    if(boardState != BoardState.Continue)
+                    boardState = CheckBoardState(new GameMove<int>(i, board[i, columnHeights[i]]), justCheckedAvilableMoves);
+                    if (boardState != BoardState.Continue)
                     {
                         return boardState;
                     }
@@ -187,7 +187,7 @@ namespace NeuralNetTreeStuffViewer
             if (IsLegalMove(move))
             {
                 MakeMove(move);
-                return CheckBoardState(move);
+                return CheckBoardState(move, false);
             }
             return BoardState.IllegalMove;
         }
@@ -201,9 +201,9 @@ namespace NeuralNetTreeStuffViewer
             float bWidth = panel.Width / (float)Width;
             float bHeight = panel.Height / (float)Height;
             Size size = new Size((int)bWidth, (int)bHeight);
-            for(int x = 0; x < Width; x++)
+            for (int x = 0; x < Width; x++)
             {
-                for(int y = 0; y < Height; y++)
+                for (int y = 0; y < Height; y++)
                 {
                     GameButton<BoardPosition> newButton = new GameButton<BoardPosition>(new BoardPosition(x, y));
                     newButton.Size = size;
@@ -250,14 +250,15 @@ namespace NeuralNetTreeStuffViewer
         public void ComputerMakeMove(int move)
         {
             BoardState state = PlayerMakeMove(new GameMove<int>(move, GetPlayerFromBool(displayTurnRed)));
-             
+
             if (state != BoardState.IllegalMove && displayButtons != null)
             {
                 BoardPosition pos = new BoardPosition(move, columnHeights[move] - 1);
                 if (displayButtons.ContainsKey(pos))
                 {
                     Button b = displayButtons[pos];
-                    b.Invoke(new MethodInvoker(() => {
+                    b.Invoke(new MethodInvoker(() =>
+                    {
                         b.Text = ButtonText(state);
                         b.BackColor = ButtonColor(displayTurnRed);
                     }));
@@ -291,7 +292,7 @@ namespace NeuralNetTreeStuffViewer
 
         Color ButtonColor(bool b)
         {
-            if(b)
+            if (b)
             {
                 return Color.Red;
             }
@@ -303,7 +304,7 @@ namespace NeuralNetTreeStuffViewer
 
         public override string ToString()
         {
-            string s = Width+ "," + Height + ",";
+            string s = Width + "," + Height + ",";
             for (int i = 0; i < board.Array.Length; i++)
             {
                 if (i != 0)
@@ -325,16 +326,16 @@ namespace NeuralNetTreeStuffViewer
             double[] arr = new double[board.XLength * board.YLength * 2 + 1];
 
             int arrIndex = 0;
-            for(int y = 0; y < board.YLength; y++)
+            for (int y = 0; y < board.YLength; y++)
             {
-                for(int x = 0; x < board.XLength; x++)
+                for (int x = 0; x < board.XLength; x++)
                 {
-                    if(board[x,y] == Players.YouOrFirst)
+                    if (board[x, y] == Players.YouOrFirst)
                     {
                         arr[arrIndex] = 1;
                         arrIndex += 2;
                     }
-                    else if(board[x,y] == Players.OpponentOrSecond)
+                    else if (board[x, y] == Players.OpponentOrSecond)
                     {
                         arrIndex++;
                         arr[arrIndex] = 1;
@@ -346,7 +347,7 @@ namespace NeuralNetTreeStuffViewer
                     }
                 }
             }
-            if(currentPlayer == Players.YouOrFirst)
+            if (currentPlayer == Players.YouOrFirst)
             {
                 arr[arrIndex] = 1;
             }
@@ -368,17 +369,17 @@ namespace NeuralNetTreeStuffViewer
         public bool BoardEquals(ITurnBasedGame<ConnectFour, int> other)
         {
             ConnectFour otherConnectFour = (ConnectFour)other;
-            if(placesRemaining == otherConnectFour.placesRemaining && Width == otherConnectFour.Width && Height == otherConnectFour.Height)
+            if (placesRemaining == otherConnectFour.placesRemaining && Width == otherConnectFour.Width && Height == otherConnectFour.Height)
             {
-                for(int x = 0; x < columnHeights.Length; x++)
+                for (int x = 0; x < columnHeights.Length; x++)
                 {
-                    if(columnHeights[x] != otherConnectFour.columnHeights[x])
+                    if (columnHeights[x] != otherConnectFour.columnHeights[x])
                     {
                         return false;
                     }
-                    for(int y = columnHeights[x]; y >= 0; y--)
+                    for (int y = columnHeights[x]; y >= 0; y--)
                     {
-                        if(board[x,y] != otherConnectFour.board[x, y])
+                        if (board[x, y] != otherConnectFour.board[x, y])
                         {
                             return false;
                         }

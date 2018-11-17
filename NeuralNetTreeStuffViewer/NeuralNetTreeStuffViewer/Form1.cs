@@ -31,7 +31,7 @@ namespace NeuralNetTreeStuffViewer
 
 
         string debugInfoPath = "debugInfo.txt";
-        string netPath = "gen3Net.txt";
+        string netPath = "minMaxGen3Net.txt";
         string policyNetPath = "policyGen0Net.txt";
         bool AIFirst = false;
         NeuralNetwork checkersNet;
@@ -42,7 +42,7 @@ namespace NeuralNetTreeStuffViewer
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            Funcs.Random = new Random(3);
+            Funcs.Random = new Random();
 
             //Chess chess = new Chess();
             if (false)
@@ -91,13 +91,13 @@ namespace NeuralNetTreeStuffViewer
                 }
                 checkersEvaluator.SetEvaluator(eval);
             }
-            else if (true)
+            else if (false)
             {
                 int maxDepth = 100;
 
-                string path = "inputOutputs4.txt";
-                string debugPath = "debugInputOutputs4.txt";
-                NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 50, 25, 10, 5, 1);
+                string path = "inputOutputsMinMax4.txt";
+                string debugPath = "debugInputOutputsMinMax4.txt";
+                NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 60, 35, 20, 10, 5, 1);
                 Backpropagation backProp = new Backpropagation(net);
                 NeuralNetwork policyNet = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 100, 150, 200, Checkers.StatocTotalAmountOfMoves);
                 Backpropagation policyBackProp = new Backpropagation(policyNet, PolicyError);
@@ -105,27 +105,29 @@ namespace NeuralNetTreeStuffViewer
 
                 var monteCarloEvaluator = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
                  Math.Sqrt(2), trainer.NetChooseMoveWithValue, 0, 8, new Checkers(), maxDepth, true);//trainer.NetChooseMove
-                MinMaxEvaluator<Checkers, CheckersMove> minMaxEvaluator = new MinMaxEvaluator<Checkers, CheckersMove>(new Checkers(), monteCarloEvaluator, 1, null);
-                double maxOut = 10;
+                MinMaxEvaluator<Checkers, CheckersMove> minMaxEvaluator = new MinMaxEvaluator<Checkers, CheckersMove>(new Checkers(), null, 5, null);
+                IEvaluateableTurnBasedGame<Checkers, CheckersMove> eval = new JustEvaluator<Checkers, CheckersMove>(trainer.NeuralNetEval, minMaxEvaluator);
+                minMaxEvaluator.Evaluator = eval;
+                double maxOut = 1;
                 //if (false)
                 //{
-                    trainer.LoadNeuralNet("gen2Net.txt");
-                    trainer.GetTrainingInputs(new Checkers(), 30, maxDepth);
-                    trainer.GetTrainingOutputs(minMaxEvaluator, 40, path, debugPath);
-                    trainer.PruneInputOutputs(maxOut);
-                    //trainer.GetPolicyOutputs(0, path, debugPath);
-                    trainer.StoreInputOutputs(path);
-                    trainer.StoreDebugInputOutputs(debugPath);
+                trainer.LoadNeuralNet(netPath);
+                trainer.GetTrainingInputs(new Checkers(), 50, maxDepth, ChooseMoveEvaluators.WeightedNeualNet);
+                trainer.GetTrainingOutputs(minMaxEvaluator, 40, path, debugPath);
+                trainer.PruneInputOutputs(maxOut);
+                //trainer.GetPolicyOutputs(0, path, debugPath);
+                trainer.StoreInputOutputs(path);
+                trainer.StoreDebugInputOutputs(debugPath);
                 //}
                 //else if (true)
                 //{
-                    //trainer.LoadNeuralNet(netPath);
-                    trainer.TrainNeuralNet(3000, .0005f, 0.1f, 0, 1, 0, maxOut, true, false, netPath);
+                //trainer.LoadNeuralNet(netPath);
+                trainer.TrainNeuralNet(10000, .0000005f, 0.03f, 0, 1, 0, maxOut, true, false, netPath, 0.8f);
                 //}
-                if(false)
+                if (false)
                 {
                     trainer.LoadPolicyNeualNet(policyNetPath);
-                    trainer.TrainNeuralNet(25, .001f, 0.06, 0, 1, 0, 1, false, true, policyNetPath);
+                    trainer.TrainNeuralNet(25, .001f, 0.06, 0, 1, 0, 1, false, true, policyNetPath, 1);
                 }
             }
             else if (false)
@@ -142,7 +144,7 @@ namespace NeuralNetTreeStuffViewer
 
                 if (false)
                 {
-                    trainer.GetTrainingInputs(new Checkers(), 50, maxDepth);
+                    trainer.GetTrainingInputs(new Checkers(), 50, maxDepth, ChooseMoveEvaluators.WeightedNeualNet);
                     trainer.GetValuePolicyTrainingOutputs(maxDepth, new Checkers(), false, 50, path, debugPath);
                     trainer.PruneInputOutputs(50);
                     trainer.StoreInputOutputs(path);
@@ -151,7 +153,7 @@ namespace NeuralNetTreeStuffViewer
                 else
                 {
                     //trainer.LoadNeuralNet(netPath);
-                    trainer.TrainNeuralNet(100, .0001f, 0.06, 0, 1, 0, 50, true, false, netPath);
+                    trainer.TrainNeuralNet(100, .0001f, 0.06, 0, 1, 0, 50, true, false, netPath, 1);
                 }
             }
             else if (false)
@@ -219,7 +221,7 @@ namespace NeuralNetTreeStuffViewer
                 Console.Clear();
                 Console.WriteLine(stopwatch.ElapsedMilliseconds / 1000f);
             }
-            else
+            else if (false)
             {
                 checkersNet = NeuralNetwork.Deserialize(File.ReadAllText(netPath));
                 Checkers checkers = new Checkers();
@@ -231,6 +233,11 @@ namespace NeuralNetTreeStuffViewer
 
                 IEvaluateableTurnBasedGame<Checkers, CheckersMove> eval = new JustEvaluator<Checkers, CheckersMove>(NeuralNetEval, checkersEvaluator);
                 checkersEvaluator.SetEvaluator(eval);
+            }
+            else
+            {
+                Chess chess = new Chess(Players.YouOrFirst);
+                chess.DisplayGame(gamePanel);
             }
         }
 
@@ -294,7 +301,7 @@ namespace NeuralNetTreeStuffViewer
                         errorCount++;
                     }
                 }
-                error += thisError/errorCount;
+                error += thisError / errorCount;
             }
             return new ErrorInfo(error / Math.Min(count, inputs.Length - startIndex), error);
         }

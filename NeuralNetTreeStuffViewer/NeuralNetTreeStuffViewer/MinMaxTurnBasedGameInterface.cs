@@ -53,7 +53,7 @@ namespace NeuralNetTreeStuffViewer
                 if (!e.Info.done)
                 {
                     int moveIndex = Game.GetMoveUniqueIdentifier(e.Info.move.Move);
-                    MakeMove(e.Info.move, moveIndex);
+                    MakeMove(e.Info.move, moveIndex, false);
                     DisplayGame.EnableDisplay(false);
                     AIMakeMove();
                     DisplayGame.EnableDisplay(true);
@@ -129,7 +129,7 @@ namespace NeuralNetTreeStuffViewer
 
         public void MakeMoveOnGame(GameMove<T1> move, int moveIndex)
         {
-            MakeMove(move, moveIndex);
+            MakeMove(move, moveIndex, false);
             DisplayGame.ComputerMakeMove(move.Move);
         }
     }

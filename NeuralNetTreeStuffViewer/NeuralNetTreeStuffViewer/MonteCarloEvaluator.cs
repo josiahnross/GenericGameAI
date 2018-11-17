@@ -107,7 +107,7 @@ namespace NeuralNetTreeStuffViewer
             return (stateTree.Root.GameInfo.Player1Wins - stateTree.Root.GameInfo.Player2Wins);
         }
 
-        public void MakeMove(GameMove<T1> move, int moveIndex, bool evalMakeMove = true)
+        public void MakeMove(GameMove<T1> move, int moveIndex, bool justCheckedAvaliableMoves, bool evalMakeMove = true)
         {
             if (CurrentNode.Children.ContainsKey(moveIndex))
             {

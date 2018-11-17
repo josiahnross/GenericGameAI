@@ -99,7 +99,7 @@ namespace NeuralNetTreeStuffViewer
             }
         }
 
-        public BoardState CheckBoardState(GameMove<bool> lastMove)
+        public BoardState CheckBoardState(GameMove<bool> lastMove, bool justCheckedAvilableMoves)
         {
             if (Depth - CurrentDepth <= 0)
             {
@@ -135,7 +135,7 @@ namespace NeuralNetTreeStuffViewer
             if (IsLegalMove(move))
             {
                 MakeMove(move);
-                return CheckBoardState(move);
+                return CheckBoardState(move, false);
             }
             return BoardState.IllegalMove;
         }
@@ -274,6 +274,11 @@ namespace NeuralNetTreeStuffViewer
         }
 
         public bool BoardEquals(ITurnBasedGame<MinMaxGame, bool> other)
+        {
+            throw new NotImplementedException();
+        }
+
+        public BoardState CheckBoardState(Players currentPlayer, bool justCheckedAvilableMoves)
         {
             throw new NotImplementedException();
         }

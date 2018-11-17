@@ -387,7 +387,7 @@ namespace NeuralNetTreeStuffViewer
             if (IsLegalMove(move))
             {
                 MakeMove(move);
-                return CheckBoardState(move);
+                return CheckBoardState(move, false);
             }
             return BoardState.IllegalMove;
         }
@@ -439,11 +439,11 @@ namespace NeuralNetTreeStuffViewer
             return true;
             */
         }
-        public BoardState CheckBoardState(GameMove<CheckersMove> lastMove)
+        public BoardState CheckBoardState(GameMove<CheckersMove> lastMove, bool justCheckedAvilableMoves)
         {
-            return CheckBoardState();
+            return CheckBoardState(lastMove.Player, justCheckedAvilableMoves);
         }
-        public BoardState CheckBoardState()
+        public BoardState CheckBoardState(Players currentPlayer, bool justCheckedAvilableMoves)
         {
             if (firstCheckers.Count > 0 ^ secondCheckers.Count > 0)
             {

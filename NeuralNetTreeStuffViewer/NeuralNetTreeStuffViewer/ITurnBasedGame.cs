@@ -19,11 +19,11 @@ namespace NeuralNetTreeStuffViewer
 
         void MakeMove(GameMove<TMove> move);
 
-        BoardState CheckBoardState(GameMove<TMove> lastMove);
-        BoardState CheckBoardState();
+        BoardState CheckBoardState(GameMove<TMove> lastMove, bool justCheckedAvilableMoves);
+        BoardState CheckBoardState(Players currentPlayer, bool justCheckedAvilableMoves);
 
         Dictionary<int, TMove> AvailableMoves(Players player);
-        
+
         void DisplayGame(Panel panel);
         void EnableDisplay(bool enable);
         void ComputerMakeMove(TMove move);

@@ -49,11 +49,11 @@ namespace NeuralNetTreeStuffViewer
         private void RunMonteCarloSim(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet, bool checkForLoops)
         {
             var newNode = Selection(node, player1Perspective);
-            var contInfo = ContinueWithNode(newNode);
+            var contInfo = ContinueWithNode(newNode, true);
             if (contInfo.continueWithNode)
             {
                 newNode = Expansion(newNode, player1Perspective, nodesSet);
-                contInfo = ContinueWithNode(newNode);
+                contInfo = ContinueWithNode(newNode, true);
                 if (contInfo.continueWithNode && newNode.AvailableMoves.Count > 0 && !newNode.FullyExplored)
                 {
                     var info = SimulationAndPartialBackprop(newNode, player1Perspective, nodesSet, checkForLoops);
@@ -151,7 +151,7 @@ namespace NeuralNetTreeStuffViewer
                     }
 
                     node.Children.Add(m.Key, child);
-                    BoardState childBoardState = child.CurrentState.CheckBoardState(childMove);
+                    BoardState childBoardState = child.CurrentState.CheckBoardState(childMove, true);
                     if (childBoardState != BoardState.Continue || child.TotalAvialableMovesCount == 0)
                     {
                         child.EndOfGame = true;
@@ -209,7 +209,7 @@ namespace NeuralNetTreeStuffViewer
                     child = node.Children[move];
                     state = child.CurrentState;
                 }
-                BoardState boardState = state.CheckBoardState(gameMove);
+                BoardState boardState = state.CheckBoardState(gameMove,true);
                 if (boardState == BoardState.Continue && child.TotalAvialableMovesCount != 0 && child.Depth < MaxDepth)
                 {
                     if (node.Parent == null || !checkForLoops || !IsLoop(child, node.Parent))
@@ -354,13 +354,13 @@ namespace NeuralNetTreeStuffViewer
             return player;
         }
 
-        public (bool continueWithNode, BoardState boardState) ContinueWithNode(MonteCarloNode<T, T1> node)
+        public (bool continueWithNode, BoardState boardState) ContinueWithNode(MonteCarloNode<T, T1> node, bool justCheckedBoardState)
         {
             bool continueWithNode = node != null && !node.EndOfGame && node.Depth < MaxDepth;
             BoardState boardState = BoardState.IllegalMove;
             if (continueWithNode)
             {
-                boardState = node.CurrentState.CheckBoardState(new GameMove<T1>(node.MoveIndex.move, GetOtherPlayer(node.Player)));
+                boardState = node.CurrentState.CheckBoardState(new GameMove<T1>(node.MoveIndex.move, GetOtherPlayer(node.Player)), justCheckedBoardState);
                 continueWithNode &= node.Parent == null || boardState == BoardState.Continue;
             }
             return (continueWithNode, boardState);

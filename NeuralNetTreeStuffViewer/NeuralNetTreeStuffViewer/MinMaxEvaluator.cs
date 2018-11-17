@@ -88,14 +88,14 @@ namespace NeuralNetTreeStuffViewer
             }
             return false;
         }
-        public void MakeMove(GameMove<T1> move, int moveIndex, bool evalMakeMove = true)
+        public void MakeMove(GameMove<T1> move, int moveIndex, bool justCheckedAvaliableMoves, bool evalMakeMove = true)
         {
             if (evalMakeMove)
             {
-                Evaluator?.MakeMove(move, moveIndex, false);
+                Evaluator?.MakeMove(move, moveIndex, justCheckedAvaliableMoves, false);
             }
             Game.MakeMove(move);
-            Game.CheckBoardState(move);
+            Game.CheckBoardState(move, justCheckedAvaliableMoves);
         }
 
 

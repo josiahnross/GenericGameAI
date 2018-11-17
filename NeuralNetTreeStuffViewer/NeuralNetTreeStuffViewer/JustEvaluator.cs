@@ -49,11 +49,11 @@ namespace NeuralNetTreeStuffViewer
             return evaluateFunc.Invoke(state, player);
         }
 
-        public void MakeMove(GameMove<T1> move, int moveIndex, bool evalMakeMove = true)
+        public void MakeMove(GameMove<T1> move, int moveIndex, bool justCheckedAvaliableMoves, bool evalMakeMove = true)
         {
             if (evalMakeMove)
             {
-                parentEval.MakeMove(move, moveIndex, false);
+                parentEval.MakeMove(move, moveIndex, justCheckedAvaliableMoves, false);
             }
         }
 

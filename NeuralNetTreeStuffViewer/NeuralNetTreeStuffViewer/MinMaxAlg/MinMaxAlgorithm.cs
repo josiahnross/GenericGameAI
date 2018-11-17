@@ -21,7 +21,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
                 BoardState boardState = BoardState.Continue;
                 if (currentNode.MoveIndex != null)
                 {
-                    boardState = currentNode.CurrentState.Game.CheckBoardState(new GameMove<T1>(currentNode.MoveIndex.Value.Move, Funcs.GetPlayerFromBool(!currentNode.MaxTurn)));
+                    boardState = currentNode.CurrentState.Game.CheckBoardState(new GameMove<T1>(currentNode.MoveIndex.Value.Move, Funcs.GetPlayerFromBool(!currentNode.MaxTurn)), true);
                 }
                 if (boardState == BoardState.Continue)
                 {
@@ -53,7 +53,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
                     {
                         var childState = currentNode.CurrentState.CopyEInterface();
                         bool childMaxTurn = !currentNode.MaxTurn;
-                        childState.MakeMove(new GameMove<T1>(move.Value, Funcs.GetPlayerFromBool(currentNode.MaxTurn)), move.Key);
+                        childState.MakeMove(new GameMove<T1>(move.Value, Funcs.GetPlayerFromBool(currentNode.MaxTurn)), move.Key, true);
                         MinMaxNode<T, T1> childNode = new MinMaxNode<T, T1>(childMaxTurn, childState, currentNode, new MoveIndex<T1>(move.Key, move.Value));
 
                         currentNode.Children.Add(childNode);

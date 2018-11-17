@@ -57,7 +57,7 @@ namespace NeuralNetTreeStuffViewer
             if (IsLegalMove(move))
             {
                 MakeMove(move);
-                return CheckBoardState(move);
+                return CheckBoardState(move, false);
             }
             return BoardState.IllegalMove;
         }
@@ -82,7 +82,7 @@ namespace NeuralNetTreeStuffViewer
             placesRemaining--;
         }
 
-        public BoardState CheckBoardState(GameMove<BoardPosition> lastMove)
+        public BoardState CheckBoardState(GameMove<BoardPosition> lastMove, bool justCheckedAvilableMoves)
         {
             bool colPossibleWin = true;
             bool rowPossibleWin = true;
@@ -150,7 +150,7 @@ namespace NeuralNetTreeStuffViewer
             return BoardState.Continue;
         }
 
-        public BoardState CheckBoardState()
+        public BoardState CheckBoardState(Players currentPlayer, bool justCheckedAvilableMoves)
         {
             BoardState boardState = BoardState.Continue;
             for(int x = 0; x < board.XLength; x++)
@@ -159,7 +159,7 @@ namespace NeuralNetTreeStuffViewer
                 {
                     if (board[x,y] != Players.None)
                     {
-                        boardState = CheckBoardState(new GameMove<BoardPosition>(new BoardPosition(x, y), board[x, y]));
+                        boardState = CheckBoardState(new GameMove<BoardPosition>(new BoardPosition(x, y), board[x, y]), justCheckedAvilableMoves);
                         if(boardState != BoardState.Continue)
                         {
                             return boardState;

@@ -20,6 +20,15 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
             Net = neuralNetwork;
         }
         
+        public double[][] GetOutputs(double[][] inputs)
+        {
+            double[][] outputs = new double[inputs.Length][];
+            for(int i = 0; i < inputs.Length; i++)
+            {
+                outputs[i] = Net.Compute(inputs[i]);
+            }
+            return outputs;
+        }
 
         public ErrorInfo TrainEpoch(double[][] inputs, double[][] desiredOutputs, double learningRate)
         {
