@@ -44,10 +44,9 @@ namespace NeuralNetTreeStuffViewer
             {
                 if (totalAmountOfMoves < 0)
                 {
-                    totalAmountOfMoves = (board.YLength - 1) * board.YLength + (board.XLength - 1);
-                    totalAmountOfMoves *= 7 * 8 + 7;
-                    totalAmountOfMoves += 6;
-                    totalAmountOfMoves += 7 * 8;
+                    totalAmountOfMoves = (board.YLength - 1) * board.YLength + (board.XLength - 1) * 2;
+                    totalAmountOfMoves++;
+                    totalAmountOfMoves *= 7 * 8 * 2;
                 }
                 return totalAmountOfMoves;
             }
@@ -56,7 +55,7 @@ namespace NeuralNetTreeStuffViewer
         {
             Copy(other, this);
         }
-        public Chess(Players startPlayer)
+        public Chess(Players startPlayer = Players.YouOrFirst)
         {
             if (startBoard == null)
             {
@@ -71,6 +70,9 @@ namespace NeuralNetTreeStuffViewer
             newBoard.currentPlayer = board.currentPlayer;
             newBoard.startPlayer = board.startPlayer;
             newBoard.board = new My2dArray<ChessPiece>(board.board.XLength, board.board.YLength);
+            newBoard.firstPieces = new HashSet<ChessPiece>();
+            newBoard.secondPieces = new HashSet<ChessPiece>();
+            newBoard.finishedGame = board.finishedGame;
             if (newBoard.unToggleList != null)
             {
                 newBoard.unToggleList.Clear();
@@ -94,7 +96,7 @@ namespace NeuralNetTreeStuffViewer
                     {
                         newBoard.unToggleList.Add(newBoard.board[x, y]);
                     }
-                    if (board.newUnToggleList[player].Contains(board.board[x, y]))
+                    if (player != Players.None && board.newUnToggleList[player].Contains(board.board[x, y]))
                     {
                         newBoard.newUnToggleList[player].Add(newBoard.board[x, y]);
                     }
@@ -116,7 +118,6 @@ namespace NeuralNetTreeStuffViewer
                     }
                 }
             }
-            newBoard.finishedGame = board.finishedGame;
         }
 
         public void MakeMove(GameMove<ChessMove> move)
@@ -133,7 +134,7 @@ namespace NeuralNetTreeStuffViewer
             BoardPosition oldPiecePos = piece.Position;
             BoardPosition newPos = change + piece.Position;
             var makeMoveInfo = moveInfo.CanMakeAMove(oldPiecePos, piece, newPos, board[newPos], move.Player, this, null);
-            moveInfo.BeforeMakeAMove(oldPiecePos, piece, newPos, board[newPos], move.Player, this, null);
+            moveInfo.BeforeMakeAMove(oldPiecePos, piece, newPos, board[newPos], move.Player, this, null, move.Move.TurnIntoQueenNotKnight);
             ChessPiece capturedPiece = null;
             if (makeMoveInfo.Item3 != null)
             {
@@ -378,7 +379,8 @@ namespace NeuralNetTreeStuffViewer
                             positionChange.Y *= -1;
                         }
                         BoardPosition newPosition = piece.Position + positionChange;
-                        if (board.InArray(newPosition))
+                        bool breakAfter = false;
+                        if (board.InArray(newPosition) && board[newPosition].Piece != ChessPieces.King)
                         {
                             if (board[newPosition].Player == player)
                             {
@@ -390,6 +392,10 @@ namespace NeuralNetTreeStuffViewer
                             }
                             else
                             {
+                                if(board[newPosition].Player == oppositePlayer)
+                                {
+                                    breakAfter = true;
+                                }
                                 var moveChangeInfo = moveDirections.Value[i].CanMakeAMove(piece.Position, piece, newPosition, board[newPosition], player, this, null);
                                 if (moveChangeInfo.Item1)
                                 {
@@ -403,6 +409,10 @@ namespace NeuralNetTreeStuffViewer
                             }
                         }
                         else
+                        {
+                            break;
+                        }
+                        if(breakAfter)
                         {
                             break;
                         }
@@ -547,25 +557,26 @@ namespace NeuralNetTreeStuffViewer
             var pieceRangesLists = new Dictionary<ChessPieces, List<MoveInfo>>();
             pieceRangesLists.Add(ChessPieces.Queen, new List<MoveInfo>()
             {
-                new MoveInfo(new List<Directions>(){Directions.Top, Directions.Right, Directions.Bottom, Directions.Left}, new BoardPosition(0, 1), new Range(1, 7), false),
-                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.BottomLeft, Directions.BottomRight, Directions.TopLeft }, new BoardPosition(1, 1), new Range(1, 7), false)
+                new MoveInfo(new List<Directions>(){Directions.Top, Directions.Right, Directions.Bottom, Directions.Left}, new BoardPosition(0, 1), new Range(1, 7), false,false),
+                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.BottomLeft, Directions.BottomRight, Directions.TopLeft }, new BoardPosition(1, 1), new Range(1, 7), false,false)
             });
             pieceRangesLists.Add(ChessPieces.Rook, new List<MoveInfo>()
             {
-                new MoveInfo(new List<Directions>(){Directions.Top, Directions.Right, Directions.Bottom, Directions.Left}, new BoardPosition(0, 1), new Range(1, 7), false)
+                new MoveInfo(new List<Directions>(){Directions.Top, Directions.Right, Directions.Bottom, Directions.Left}, new BoardPosition(0, 1), new Range(1, 7), false,false)
             });
             pieceRangesLists.Add(ChessPieces.Bishop, new List<MoveInfo>()
             {
-                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.BottomLeft, Directions.BottomRight, Directions.TopLeft }, new BoardPosition(1, 1), new Range(1, 7), false)
+                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.BottomLeft, Directions.BottomRight, Directions.TopLeft }, new BoardPosition(1, 1), new Range(1, 7), false,false)
             });
             pieceRangesLists.Add(ChessPieces.Knight, new List<MoveInfo>()
             {
-                new MoveInfo(new List<Directions>(){Directions.Top, Directions.Right, Directions.Bottom, Directions.Left}, new BoardPosition(1, 2), new Range(1, 1), true),
-                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.BottomLeft, Directions.BottomRight, Directions.TopLeft }, new BoardPosition(2, 1), new Range(1, 1), true)
+                new MoveInfo(new List<Directions>(){Directions.Top, Directions.Right, Directions.Bottom, Directions.Left}, new BoardPosition(1, 2), new Range(1, 1), true,false),
+                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.BottomLeft, Directions.BottomRight, Directions.TopLeft }, new BoardPosition(2, 1), new Range(1, 1), true,false)
             });
             pieceRangesLists.Add(ChessPieces.Pawn, new List<MoveInfo>()
             {
-                new MoveInfo(new List<Directions>(){Directions.Top }, new BoardPosition(0, 1), new Range(1, 1), false,
+                new MoveInfo(new List<Directions>(){Directions.Top }, new BoardPosition(0, 1), new Range(1, 1), false, false,
+                (newPos, piece) => {return GetRelativePosition(piece.Player, newPos).Y == board.YLength-1; },
                 (pos,currPiece, newPos, newPiece, player,board, movedPieces)=>
                 {
                     if(newPiece.Player == Players.None)
@@ -576,22 +587,26 @@ namespace NeuralNetTreeStuffViewer
                     }
                     return (false, null, null);
                 },
-                (pos,currPiece,newPos,newPiece,player, board, movedPieces)=>
+                (pos,currPiece,newPos,newPiece,player, board, movedPieces, queenNotKnight)=>
                 {
                     currPiece.TagedBool = false;
                     currPiece.Tag2ndBool(EnPasantOpportunity(pos,currPiece, newPos, player,board),player, board);
+                    UpgradePawn(newPos, currPiece, queenNotKnight);
                 }),
-                new MoveInfo(new List<Directions>(){Directions.Top }, new BoardPosition(0, 1), new Range(2, 2), false,
+                new MoveInfo(new List<Directions>(){Directions.Top }, new BoardPosition(0, 1), new Range(2, 2), false,false,
+                (newPos, piece) => {return GetRelativePosition(piece.Player, newPos).Y == board.YLength-1; },
                 (pos,currPiece,newPos,newPiece,player,board, movedPieces)=>
                 {
                     return (GetRelativePosition(player, pos).Y == 1, MoveInfo.DefaultMovedPieces(pos,currPiece, newPos,newPiece, board), newPos);
                 },
-                (pos,currPiece,newPos,newPiece,player,board, movedPieces)=>
+                (pos,currPiece,newPos,newPiece,player,board, movedPieces, queenNotKnight)=>
                 {
                     currPiece.TagedBool = true;
                     currPiece.Tag2ndBool(EnPasantOpportunity(pos,currPiece, newPos, player,board),player, board);
+                    UpgradePawn(newPos, currPiece, queenNotKnight);
                 }),
-                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.TopLeft }, new BoardPosition(1, 1), new Range(1, 1), false,
+                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.TopLeft }, new BoardPosition(1, 1), new Range(1, 1), false,false,
+                (newPos, piece) => {return GetRelativePosition(piece.Player, newPos).Y == board.YLength-1; },
                 (pos,currPiece,newPos,newPiece,player,board, movedPieces)=>
                 {
                     if(newPiece.Player==Funcs.OppositePlayer(player))
@@ -619,7 +634,7 @@ namespace NeuralNetTreeStuffViewer
                     }
                     return (false, null, newPos);
                 },
-                (pos,currPiece,newPos,newPiece,player,board, movedPieces)=>
+                (pos,currPiece,newPos,newPiece,player,board, movedPieces,queenNotKnight)=>
                 {
                     if(newPiece.Player==Funcs.OppositePlayer(player))
                     {
@@ -631,13 +646,14 @@ namespace NeuralNetTreeStuffViewer
                         currPiece.TagedBool = false;
                        currPiece.Tag2ndBool(false, player,board);
                     }
+                    UpgradePawn(newPos, currPiece, queenNotKnight);
                 })
             });
             pieceRangesLists.Add(ChessPieces.King, new List<MoveInfo>()
             {
-                new MoveInfo(new List<Directions>(){Directions.Top, Directions.Right, Directions.Bottom, Directions.Left}, new BoardPosition(0, 1), new Range(1, 1), false),
-                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.BottomLeft, Directions.BottomRight, Directions.TopLeft }, new BoardPosition(1, 1), new Range(1, 1), false),
-                new MoveInfo(new List<Directions>(){Directions.Right, Directions.Left}, new BoardPosition(0,1), new Range(2,2), false,
+                new MoveInfo(new List<Directions>(){Directions.Top, Directions.Right, Directions.Bottom, Directions.Left}, new BoardPosition(0, 1), new Range(1, 1), false,false),
+                new MoveInfo(new List<Directions>(){Directions.TopRight, Directions.BottomLeft, Directions.BottomRight, Directions.TopLeft }, new BoardPosition(1, 1), new Range(1, 1), false,false),
+                new MoveInfo(new List<Directions>(){Directions.Right, Directions.Left}, new BoardPosition(0,1), new Range(2,2), false,false, null,
                 (pos,currPiece,newPos,newPiece,player, board, movedPieces)=>
                 {
                     if(newPiece.Player == Players.None)
@@ -662,24 +678,47 @@ namespace NeuralNetTreeStuffViewer
                             if(!rook.HasMoved && rook.Piece == ChessPieces.Rook && rook.Player == player && board[emptyPos].Player == Players.None)
                             {
                                 ChessPiece emptyPiece = board[emptyPos];
-                                if(movedPieces != null && movedPieces.ContainsKey(emptyPiece))
+                                ChessPiece rookNewPiece = board[rookNewPos];
+                                if(movedPieces != null)
                                 {
-                                    bool foundPiece = false;
+                                bool containsEmptyPiece = movedPieces.ContainsKey(emptyPiece);
+                                bool containsRookNewPiece = movedPieces.ContainsKey(rookNewPiece);
+                                if(containsEmptyPiece || containsRookNewPiece)
+                                {
+                                    bool foundEmptyPiece = !containsEmptyPiece;
+                                    bool foundNewRookPiece = !containsRookNewPiece;
                                     foreach(var p in movedPieces)
                                     {
                                         if(p.Value == emptyPos)
                                         {
+                                            foundEmptyPiece = true;
                                             emptyPiece = p.Key;
-                                            foundPiece = true;
-                                            break;
+                                            if(foundNewRookPiece)
+                                            {
+                                                break;
+                                            }
+                                        }
+                                        if (p.Value == rookNewPos)
+                                        {
+                                            foundNewRookPiece = true;
+                                            rookNewPiece = p.Key;
+                                            if(foundEmptyPiece)
+                                            {
+                                                break;
+                                            }
                                         }
                                     }
-                                    if(!foundPiece)
+                                    if(!foundEmptyPiece)
                                     {
                                         emptyPiece = null;
                                     }
+                                    if(!foundNewRookPiece)
+                                    {
+                                        rookNewPiece = null;
+                                    }
                                 }
-                                if(emptyPiece == null || emptyPiece.Player == Players.None)
+                                }
+                                if((emptyPiece == null || emptyPiece.Player == Players.None) && (rookNewPiece == null || emptyPiece.Player == Players.None))
                                 {
                                     if(!InCheck(player, movedPieces))
                                     {
@@ -748,6 +787,17 @@ namespace NeuralNetTreeStuffViewer
                         {
                             newMoveInfo.ReverseMoves.Add(m.Key, m.Value);
                         }
+                        foreach (var m in r.Value[i].DirectionMoves)
+                        {
+                            if (newMoveInfo.DirectionMoves.ContainsKey(m.Key))
+                            {
+                                newMoveInfo.DirectionMoves[m.Key].AddRange(m.Value);
+                            }
+                            else
+                            {
+                                newMoveInfo.DirectionMoves.Add(m.Key, m.Value);
+                            }
+                        }
                     }
                     pieceRanges.Add(r.Key, newMoveInfo);
                 }
@@ -774,7 +824,21 @@ namespace NeuralNetTreeStuffViewer
             noneImage = new Bitmap(1, 1);
         }
 
-
+        void UpgradePawn(BoardPosition newPos, ChessPiece piece, bool turnIntoQueenNotKnight)
+        {
+            Players player = piece.Player;
+            if (GetRelativePosition(player, newPos).Y == board.YLength - 1)
+            {
+                if (turnIntoQueenNotKnight)
+                {
+                    piece.Piece = ChessPieces.Queen;
+                }
+                else
+                {
+                    piece.Piece = ChessPieces.Knight;
+                }
+            }
+        }
 
         public int GetMoveUniqueIdentifier(ChessMove move)
         {
@@ -907,9 +971,14 @@ namespace NeuralNetTreeStuffViewer
                 if (moveInfo.ReverseMoves.ContainsKey(positionChange))
                 {
                     var move = moveInfo.ReverseMoves[positionChange];
-                    move.PositionChange = new ChessMove(selectedPosition.Value, move.PositionChange.Direction, move.PositionChange.MoveAmount);
+                    move.PositionChange = new ChessMove(selectedPosition.Value, move.PositionChange.Direction, move.PositionChange.MoveAmount, piece == ChessPieces.Pawn);
                     var gameMove = new GameMove<ChessMove>(move.PositionChange, movePlayer);
                     BoardState state = PlayerMakeMove(gameMove);
+                    if(state == BoardState.IllegalMove)
+                    {
+                        gameMove.Move = new ChessMove(gameMove.Move.InitPosition, gameMove.Move.Direction, gameMove.Move.MoveAmount, false);
+                        state = PlayerMakeMove(gameMove);
+                    }
                     if (state != BoardState.IllegalMove)
                     {
                         for (int x = 0; x < board.XLength; x++)
@@ -971,19 +1040,124 @@ namespace NeuralNetTreeStuffViewer
             return !(x % 2 == 1 ^ y % 2 == 1);
         }
 
-        public void EnableDisplay(bool enable)
+        public async void EnableDisplay(bool enable)
         {
-            throw new NotImplementedException();
+            await Task.Run(() =>
+            {
+                foreach (var button in displayButtons.Values)
+                {
+                    button.Invoke(new MethodInvoker(() => button.Enabled = enable));
+                }
+            });
         }
 
         public void ComputerMakeMove(ChessMove move)
         {
-            throw new NotImplementedException();
-        }
+            BoardState state = PlayerMakeMove(new GameMove<ChessMove>(move, board[move.InitPosition].Player));
 
+            if (state != BoardState.IllegalMove)
+            {
+                if (displayButtons.ContainsKey(move.InitPosition))
+                {
+                    Button b = displayButtons[move.InitPosition];
+                    b.Invoke(new MethodInvoker(() =>
+                    {
+                        for (int x = 0; x < board.XLength; x++)
+                        {
+                            for (int y = 0; y < board.YLength; y++)
+                            {
+                                BoardPosition pos = new BoardPosition(x, y);
+                                displayButtons[pos].Image = GetChessPieceImage(board[pos].Player, board[pos].Piece, displayButtons[pos].Size);
+                            }
+                        }
+                    }));
+                }
+            }
+        }
+        static int InputSize = -1;
         public double[] GetInputs(Players currentPlayer)
         {
-            throw new NotImplementedException();
+            if (InputSize < 0)
+            {
+                InputSize = board.XLength * board.YLength;
+                InputSize *= 3 + 2;//Piece Info
+                InputSize++;//currentPlayer
+            }
+            double[] inputs = new double[InputSize];
+            int currentIndex = 0;
+            for (int y = 0; y < board.YLength; y++)
+            {
+                for (int x = 0; x < board.XLength; x++)
+                {
+                    SetPlayerInputs(board[x, y].Player, inputs, ref currentIndex);
+                    SetPieceInputs(board[x, y].Piece, inputs, ref currentIndex);
+                }
+            }
+            if (currentPlayer == Players.YouOrFirst)
+            {
+                inputs[currentIndex] = 1;
+            }
+            else
+            {
+                inputs[currentIndex] = 0;
+            }
+            return inputs;
+        }
+        void SetPlayerInputs(Players player, double[] inputs, ref int currentIndex)
+        {
+            int amountOfBinarryDigits = 2;
+            switch (player)
+            {
+                case (Players.YouOrFirst):
+                    inputs[currentIndex] = 1;
+                    currentIndex += amountOfBinarryDigits;
+                    break;
+                case (Players.OpponentOrSecond):
+                    currentIndex++;
+                    inputs[currentIndex] = 1;
+                    currentIndex += amountOfBinarryDigits - 1;
+                    break;
+                default:
+                    currentIndex += amountOfBinarryDigits;
+                    break;
+            }
+        }
+        void SetPieceInputs(ChessPieces piece, double[] inputs, ref int currentIndex)
+        {
+            int amountOfBinaryDigits = 3;
+            switch (piece)
+            {
+                case (ChessPieces.Knight):
+                    inputs[currentIndex] = 1;
+                    currentIndex += amountOfBinaryDigits;
+                    break;
+                case (ChessPieces.Bishop):
+                    currentIndex++;
+                    inputs[currentIndex] = 1;
+                    currentIndex += amountOfBinaryDigits - 1;
+                    break;
+                case (ChessPieces.Rook):
+                    currentIndex += 2;
+                    inputs[currentIndex] = 1;
+                    currentIndex += amountOfBinaryDigits - 2;
+                    break;
+                case (ChessPieces.Queen):
+                    inputs[currentIndex] = 1;
+                    currentIndex++;
+                    inputs[currentIndex] = 1;
+                    currentIndex += amountOfBinaryDigits - 1;
+                    break;
+                case (ChessPieces.King):
+                    currentIndex++;
+                    inputs[currentIndex] = 1;
+                    currentIndex++;
+                    inputs[currentIndex] = 1;
+                    currentIndex += amountOfBinaryDigits - 2;
+                    break;
+                default:
+                    currentIndex += amountOfBinaryDigits;
+                    break;
+            }
         }
 
         public void InitializeStaticVariables()
@@ -1021,9 +1195,46 @@ namespace NeuralNetTreeStuffViewer
 
         public bool BoardEquals(ITurnBasedGame<Chess, ChessMove> other)
         {
-            throw new NotImplementedException();
+            Chess otherChess = (Chess)other;
+            if (otherChess.currentPlayer == currentPlayer && otherChess.firstPieces.Count == firstPieces.Count &&
+                otherChess.secondPieces.Count == secondPieces.Count && otherChess.firstKing.Position == firstKing.Position
+                && otherChess.secondKing.Position == secondKing.Position && otherChess.unToggleList.Count == unToggleList.Count &&
+                otherChess.newUnToggleList[Players.YouOrFirst].Count == newUnToggleList[Players.YouOrFirst].Count &&
+                otherChess.newUnToggleList[Players.OpponentOrSecond].Count == newUnToggleList[Players.OpponentOrSecond].Count)
+            {
+                for (int i = 0; i < board.Array.Length; i++)
+                {
+                    ChessPiece piece = board.Array[i];
+                    ChessPiece otherPiece = otherChess.board.Array[i];
+                    if (!(piece.Player == otherPiece.Player && piece.Piece == otherPiece.Piece
+                        && piece.TagedBool == otherPiece.TagedBool && piece.TagedBool2 == otherPiece.TagedBool2
+                        && piece.HasMoved == otherPiece.HasMoved))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
+        public override string ToString()
+        {
+            string str = "";
+            for (int x = 0; x < board.XLength; x++)
+            {
+                for (int y = 0; y < board.YLength; y++)
+                {
+                    if (!(x == 0 && y == 0))
+                    {
+                        str += "-";
+                    }
+                    str += board[x, y].ToString();
+                }
+            }
+            return str;
         }
     }
+
     public class ChessPiece
     {
         BoardPosition position;
@@ -1069,13 +1280,18 @@ namespace NeuralNetTreeStuffViewer
                 chess.newUnToggleList[player].Add(this);
             }
         }
+        public override string ToString()
+        {
+            return Position.X + "," + Position.Y + "," + (int)Piece + "," + (int)Player;
+        }
     }
+
     public struct ChessMove
     {
         public BoardPosition InitPosition { get; set; }
         public Directions Direction { get; set; }
         public int MoveAmount { get; set; }
-
+        public bool TurnIntoQueenNotKnight { get; set; }
         static int moveAmountDifference = 7;
         static int moveAmountOffset = 1;
         static int boardSize = 8;
@@ -1083,16 +1299,22 @@ namespace NeuralNetTreeStuffViewer
         public int GetMoveUniqueIdentifier()
         {
             int boardPos = InitPosition.Y * boardSize + InitPosition.X;
-            boardPos *= moveAmountDifference + (amountOfDirections - 1) * amountOfDirections;
-            boardPos += MoveAmount - moveAmountOffset;
-            boardPos += ((int)Direction) * amountOfDirections;
+            boardPos *= moveAmountDifference * amountOfDirections * 2;
+            if (TurnIntoQueenNotKnight)
+            {
+                boardPos += 1;
+            }
+            boardPos += (MoveAmount - moveAmountOffset) * 2;
+            boardPos += ((int)Direction) * moveAmountDifference * 2;
+
             return boardPos;
         }
-        public ChessMove(BoardPosition initPosition, Directions direction, int moveAmount)
+        public ChessMove(BoardPosition initPosition, Directions direction, int moveAmount, bool turnIntoQueenNotKngiht)
         {
             InitPosition = initPosition;
             Direction = direction;
             MoveAmount = moveAmount;
+            TurnIntoQueenNotKnight = turnIntoQueenNotKngiht;
         }
     }
 
@@ -1110,6 +1332,7 @@ namespace NeuralNetTreeStuffViewer
             return value >= Min && value >= Max;
         }
     }
+
     public struct MoveInfo
     {
         public Dictionary<Directions, List<MoveChangeInfo<(BoardPosition pos, ChessMove move)>>> DirectionMoves { get; set; }
@@ -1117,9 +1340,9 @@ namespace NeuralNetTreeStuffViewer
         public Dictionary<BoardPosition, MoveChangeInfo<ChessMove>> ReverseMoves { get; set; }
         public static Dictionary<Directions, (bool negX, bool negY, bool swap)> DirectionsRotations;
         public bool OneRange { get; }
-        public MoveInfo(List<Directions> directions, BoardPosition boardChange, Range multiplayerRange, bool canJump,
+        public MoveInfo(List<Directions> directions, BoardPosition boardChange, Range multiplayerRange, bool canJump, bool canUpgrade, Func<BoardPosition, ChessPiece, bool> upgradeCondition = null,
             Func<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>, (bool, Dictionary<ChessPiece, BoardPosition?>, BoardPosition?)> canMakeMove = null,
-            Action<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>> beforeMakeMove = null, bool? oneRange = null)
+            Action<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>, bool> beforeMakeMove = null, bool? oneRange = null)
         {
             if (oneRange == null)
             {
@@ -1160,11 +1383,32 @@ namespace NeuralNetTreeStuffViewer
                 }
                 for (int i = multiplayerRange.Min; i <= multiplayerRange.Max; i++)
                 {
-                    ChessMove move = new ChessMove(new BoardPosition(-1, -1), d, i);
-                    BoardPosition pos = directionPos * i;
-                    Moves.Add(move, new MoveChangeInfo<BoardPosition>(pos, canJump, canMakeMove, beforeMakeMove));
-                    ReverseMoves.Add(pos, new MoveChangeInfo<ChessMove>(move, canJump, canMakeMove, beforeMakeMove));
-                    directionsMoveList.Add(new MoveChangeInfo<(BoardPosition, ChessMove)>((pos, move), canJump, canMakeMove, beforeMakeMove));
+                    for (int j = 0; (canUpgrade && j < 2) || j < 1; j++)
+                    {
+                        bool upgradeV = j == 1;
+                        ChessMove move = new ChessMove(new BoardPosition(-1, -1), d, i, upgradeV);
+                        BoardPosition pos = directionPos * i;
+                        var newCanMakeMove = canMakeMove;
+
+                        if (upgradeV)
+                        {
+                            newCanMakeMove = (positon, piece, newPos, newPiece, player, board, movedPieces) =>
+                            {
+                                if (upgradeCondition == null || upgradeCondition.Invoke(newPos, piece))
+                                {
+                                    return canMakeMove == null ? (true, DefaultMovedPieces(positon, piece, newPos, newPiece, board), newPos) : canMakeMove.Invoke(positon, piece, newPos, newPiece, player, board, movedPieces);
+                                }
+                                return (false, null, null);
+                            };
+                        }
+
+                        Moves.Add(move, new MoveChangeInfo<BoardPosition>(pos, canJump, newCanMakeMove, beforeMakeMove));
+                        if (j == 0)
+                        {
+                            ReverseMoves.Add(pos, new MoveChangeInfo<ChessMove>(move, canJump, newCanMakeMove, beforeMakeMove));
+                        }
+                        directionsMoveList.Add(new MoveChangeInfo<(BoardPosition, ChessMove)>((pos, move), canJump, newCanMakeMove, beforeMakeMove));
+                    }
                 }
             }
         }
@@ -1181,11 +1425,11 @@ namespace NeuralNetTreeStuffViewer
     {
         public T PositionChange { get; set; }
         Func<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>, (bool, Dictionary<ChessPiece, BoardPosition?>, BoardPosition?)> CanMakeMove { get; }
-        Action<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>> BeforeMakeMove { get; }
+        Action<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>, bool> BeforeMakeMove { get; }
         public bool CanJump { get; set; }
         public MoveChangeInfo(T positionChange, bool canJump,
             Func<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>, (bool, Dictionary<ChessPiece, BoardPosition?>, BoardPosition?)> canMakeMove,
-            Action<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>> afterMakeMove)
+            Action<BoardPosition, ChessPiece, BoardPosition, ChessPiece, Players, Chess, Dictionary<ChessPiece, BoardPosition?>, bool> afterMakeMove)
         {
             PositionChange = positionChange;
             CanJump = canJump;
@@ -1200,11 +1444,11 @@ namespace NeuralNetTreeStuffViewer
             }
             return CanMakeMove.Invoke(piecePosition, currentPiece, newPiecePosition, newPiece, player, board, movedPieces);
         }
-        public void BeforeMakeAMove(BoardPosition piecePosition, ChessPiece currentPiece, BoardPosition newPiecePosition, ChessPiece newPiece, Players player, Chess board, Dictionary<ChessPiece, BoardPosition?> movedPieces)
+        public void BeforeMakeAMove(BoardPosition piecePosition, ChessPiece currentPiece, BoardPosition newPiecePosition, ChessPiece newPiece, Players player, Chess board, Dictionary<ChessPiece, BoardPosition?> movedPieces, bool turnIntoQueenNotKnight)
         {
             if (BeforeMakeMove != null)
             {
-                BeforeMakeMove.Invoke(piecePosition, currentPiece, newPiecePosition, newPiece, player, board, movedPieces);
+                BeforeMakeMove.Invoke(piecePosition, currentPiece, newPiecePosition, newPiece, player, board, movedPieces, turnIntoQueenNotKnight);
             }
         }
     }

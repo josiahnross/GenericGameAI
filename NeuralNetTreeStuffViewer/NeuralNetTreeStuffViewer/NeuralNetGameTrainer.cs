@@ -450,7 +450,7 @@ namespace NeuralNetTreeStuffViewer
             return key;
         }
 
-        public double NeuralNetEval(ITurnBasedGame<Checkers, CheckersMove> game, Players player)
+        public double NeuralNetEval(ITurnBasedGame<T, T1> game, Players player)
         {
             double[] input = game.GetInputs(player);
             return backPropV.Net.Compute(input)[0];
@@ -479,7 +479,7 @@ namespace NeuralNetTreeStuffViewer
                 throw new NullReferenceException();
             }
         }
-        public int RandomChooseMove(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
+        public static int RandomChooseMove(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
         {
             var val = avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;
             return val;

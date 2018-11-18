@@ -15,6 +15,8 @@ namespace ReadMinMaxNodeDebugInfo
     public partial class currentIndexTxtBox : Form
     {
         Dictionary<string, (Action<string> init, Action<string, object> set)> debugInfoDisplayActions;
+        Dictionary<Players, Dictionary<ChessPieces, Bitmap>> chessPieceImages;
+        Bitmap noneImage;
         object actionInfo;
         public currentIndexTxtBox()
         {
@@ -23,7 +25,30 @@ namespace ReadMinMaxNodeDebugInfo
             debugInfoDisplayActions.Add("TickTacToe", (InitTickTacToeDisplay, TickTacToeDisplayAction));
             debugInfoDisplayActions.Add("ConnectFour", (InitConnectFourDisplay, ConnectFourDisplayAction));
             debugInfoDisplayActions.Add("Checkers", (InitCheckersDisplay, CheckersDisplayAction));
+            debugInfoDisplayActions.Add("Chess", (InitChessDisplay, ChessDisplayAction));
             indexUpDown.Maximum = decimal.MaxValue;
+
+            #region ChessPieceImages
+            chessPieceImages = new Dictionary<Players, Dictionary<ChessPieces, Bitmap>>();
+            var firstImages = new Dictionary<ChessPieces, Bitmap>();
+            var secondImages = new Dictionary<ChessPieces, Bitmap>();
+            chessPieceImages.Add(Players.YouOrFirst, firstImages);
+            chessPieceImages.Add(Players.OpponentOrSecond, secondImages);
+            firstImages.Add(ChessPieces.King, Properties.Resources.whiteKing);
+            firstImages.Add(ChessPieces.Queen, Properties.Resources.whiteQueen);
+            firstImages.Add(ChessPieces.Rook, Properties.Resources.whiteRook);
+            firstImages.Add(ChessPieces.Bishop, Properties.Resources.whiteBishop);
+            firstImages.Add(ChessPieces.Knight, Properties.Resources.whiteKnight);
+            firstImages.Add(ChessPieces.Pawn, Properties.Resources.whitePawn);
+
+            secondImages.Add(ChessPieces.King, Properties.Resources.blackKing);
+            secondImages.Add(ChessPieces.Queen, Properties.Resources.blackQueen);
+            secondImages.Add(ChessPieces.Rook, Properties.Resources.blackRook);
+            secondImages.Add(ChessPieces.Bishop, Properties.Resources.blackBishop);
+            secondImages.Add(ChessPieces.Knight, Properties.Resources.blackKnight);
+            secondImages.Add(ChessPieces.Pawn, Properties.Resources.blackPawn);
+            noneImage = new Bitmap(1, 1);
+            #endregion
         }
 
         Dictionary<TreeNode, DebugInfo> infos;
@@ -231,6 +256,60 @@ namespace ReadMinMaxNodeDebugInfo
         }
         #endregion
 
+        #region Chess
+        void InitChessDisplay(string strBoard)
+        {
+            boardPanel.Controls.Clear();
+            List<Button> buttons = new List<Button>();
+            int size = Math.Min(boardPanel.Size.Width, boardPanel.Size.Height) / 8;
+            for (int x = 0; x < 8; x++)
+            {
+                for (int y = 7; y >= 0; y--)
+                {
+                    Button b = new Button();
+                    b.Size = new Size(size, size);
+                    b.Location = new Point(x * size, y * size);
+                    buttons.Add(b);
+                    boardPanel.Controls.Add(b);
+                    if (!(x % 2 == 1 ^ y % 2 == 1))
+                    {
+                        b.BackColor = Color.LightGray;
+                    }
+                    else
+                    {
+                        b.BackColor = Color.DarkGray;
+                    }
+                }
+            }
+
+            actionInfo = buttons;
+        }
+
+        void ChessDisplayAction(string strBoard, object extraStuff)
+        {
+            string[] board = strBoard.Split(new char[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
+            List<Button> buttons = (List<Button>)extraStuff;
+            for (int i = 0; i < board.Length; i++)
+            {
+                string[] piece = board[i].Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                string txt = "";
+                Color color;
+                ChessPieces chessPiece = (ChessPieces)int.Parse(piece[2]);
+                Players player = (Players)int.Parse(piece[3]);
+
+                buttons[i].Image = GetChessPieceImage(player, chessPiece, buttons[i].Size);
+            }
+        }
+
+        Bitmap GetChessPieceImage(Players player, ChessPieces piece, Size buttonSize)
+        {
+            if (player == Players.None)
+            {
+                return noneImage;
+            }
+            return new Bitmap(chessPieceImages[player][piece], buttonSize);
+        }
+        #endregion
         private void fileButton_Click(object sender, EventArgs e)
         {
             openFileDialog1.ShowDialog();
@@ -570,5 +649,14 @@ namespace ReadMinMaxNodeDebugInfo
         {
             return X.ToString() + " , " + Y.ToString();
         }
+    }
+    public enum ChessPieces
+    {
+        Pawn,
+        Knight,
+        Bishop,
+        Rook,
+        Queen,
+        King
     }
 }

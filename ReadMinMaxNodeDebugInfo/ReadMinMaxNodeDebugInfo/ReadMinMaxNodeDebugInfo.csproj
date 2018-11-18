@@ -70,6 +70,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
@@ -84,6 +85,42 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\blackKnight.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\blackPawn.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\blackQueen.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\blackRook.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\whiteBishop.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\whiteKing.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\whiteKnight.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\whitePawn.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\whiteQueen.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\whiteRook.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\blackBishop.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\blackKing.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

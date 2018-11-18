@@ -46,9 +46,9 @@
             // 
             // openDebugInputOutputButton
             // 
-            this.openDebugInputOutputButton.Location = new System.Drawing.Point(403, 12);
+            this.openDebugInputOutputButton.Location = new System.Drawing.Point(480, 12);
             this.openDebugInputOutputButton.Name = "openDebugInputOutputButton";
-            this.openDebugInputOutputButton.Size = new System.Drawing.Size(798, 712);
+            this.openDebugInputOutputButton.Size = new System.Drawing.Size(721, 712);
             this.openDebugInputOutputButton.TabIndex = 0;
             // 
             // textBox1
@@ -73,7 +73,7 @@
             // 
             this.boardPanel.Location = new System.Drawing.Point(145, 12);
             this.boardPanel.Name = "boardPanel";
-            this.boardPanel.Size = new System.Drawing.Size(252, 289);
+            this.boardPanel.Size = new System.Drawing.Size(329, 332);
             this.boardPanel.TabIndex = 3;
             // 
             // openFileDialog1
@@ -142,7 +142,7 @@
             // 
             // indexUpDown
             // 
-            this.indexUpDown.Location = new System.Drawing.Point(145, 307);
+            this.indexUpDown.Location = new System.Drawing.Point(145, 350);
             this.indexUpDown.Name = "indexUpDown";
             this.indexUpDown.Size = new System.Drawing.Size(252, 20);
             this.indexUpDown.TabIndex = 11;

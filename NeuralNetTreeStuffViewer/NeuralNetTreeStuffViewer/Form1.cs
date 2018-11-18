@@ -42,7 +42,7 @@ namespace NeuralNetTreeStuffViewer
         }
         private void Form1_Load(object sender, EventArgs e)
         {
-            Funcs.Random = new Random();
+            Funcs.Random = new Random(1);
 
             //Chess chess = new Chess();
             if (false)
@@ -236,8 +236,34 @@ namespace NeuralNetTreeStuffViewer
             }
             else
             {
-                Chess chess = new Chess(Players.YouOrFirst);
+                Chess chess = new Chess();
                 chess.DisplayGame(gamePanel);
+                int maxDepth = 100;
+
+                netPath = "chessGen0Net.txt";
+                string path = "chessInputOutputsMinMax0.txt";
+                string debugPath = "chessDebugInputOutputsMinMax0.txt";
+                NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 321, 250, 100, 50, 30, 20, 10, 1);
+                Backpropagation backProp = new Backpropagation(net);
+                NeuralNetGameTrainer<Chess, ChessMove> trainer = new NeuralNetGameTrainer<Chess, ChessMove>(backProp, null, path, debugPath);
+
+                var monteCarloEvaluator = new MonteCarloEvaluator<Chess, ChessMove>(MonteCarloTree<Chess, ChessMove>.UTCSelection,
+                 Math.Sqrt(2), NeuralNetGameTrainer<Chess, ChessMove>.RandomChooseMove, 0, 8, new Chess(), maxDepth, true);
+                MinMaxEvaluator<Chess, ChessMove> minMaxEvaluator = new MinMaxEvaluator<Chess, ChessMove>(new Chess(), null, 1, null);
+                IEvaluateableTurnBasedGame<Chess, ChessMove> eval = new JustEvaluator<Chess, ChessMove>(trainer.NeuralNetEval, minMaxEvaluator);
+                minMaxEvaluator.Evaluator = monteCarloEvaluator;
+                double maxOut = 10;
+
+                //trainer.LoadNeuralNet(netPath);
+
+                trainer.GetTrainingInputs(new Chess(), 20, maxDepth, ChooseMoveEvaluators.Random);
+                trainer.GetTrainingOutputs(minMaxEvaluator, 40, path, debugPath);
+                trainer.PruneInputOutputs(maxOut);
+                trainer.StoreInputOutputs(path);
+                trainer.StoreDebugInputOutputs(debugPath);
+
+                trainer.TrainNeuralNet(10000, .00001f, 0.1f, 0, 1, 0, maxOut, true, false, netPath, 0.8f);
+
             }
         }
 
