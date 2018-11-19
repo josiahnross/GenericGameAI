@@ -14,10 +14,10 @@ namespace NeuralNetTreeStuffViewer
         public MonteCarloNode<T, T1> Root { get; private set; }
         Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction;
         public double ExplorationParam { get; }
-        Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc;
+        Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc;
         public int MaxDepth { get; }
         public MonteCarloTree(ITurnBasedGame<T, T1> game, Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam,
-            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc, int maxDepth, Players startPlayer)
+            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc, int maxDepth, Players startPlayer)
         {
             this.chooseMoveFunc = chooseMoveFunc;
             ExplorationParam = explorationParam;
@@ -123,7 +123,7 @@ namespace NeuralNetTreeStuffViewer
                 }
                 if (bestMoves.Count > 1)
                 {
-                    bestIndex = chooseMoveFunc.Invoke(node.CurrentState, bestMoves, node.Player);
+                    bestIndex = chooseMoveFunc.Invoke(node.CurrentState, bestMoves, node.Player).key;
                 }
                 return Selection(node.Children[bestIndex], player1Perspective);
             }
@@ -175,7 +175,7 @@ namespace NeuralNetTreeStuffViewer
             if (node.AvailableMoves.Count > 0)
             {
                 var move = chooseMoveFunc.Invoke(node.CurrentState, node.AvailableMoves, node.Player);
-                return node.Children[move];
+                return node.Children[move.key];
             }
             if (!node.FullyExplored)
             {
@@ -191,22 +191,29 @@ namespace NeuralNetTreeStuffViewer
             {
                 var move = chooseMoveFunc.Invoke(node.CurrentState, node.AvailableMoves, player);
                 ITurnBasedGame<T, T1> state;
-                GameMove<T1> gameMove = new GameMove<T1>(node.AvailableMoves[move], player); ;
+                GameMove<T1> gameMove = new GameMove<T1>(node.AvailableMoves[move.key], player); ;
                 MonteCarloNode<T, T1> child;
-                if (!node.Children.ContainsKey(move))
+                if (!node.Children.ContainsKey(move.key))
                 {
-                    state = node.CurrentState.Copy();
-                    state.MakeMove(gameMove);
-                    child = new MonteCarloNode<T, T1>(node, state, (move, gameMove.Move), GetOtherPlayer(player), node.Depth + 1);
+                    if (move.newBoardState == null)
+                    {
+                        state = node.CurrentState.Copy();
+                        state.MakeMove(gameMove);
+                    }
+                    else
+                    {
+                        state = move.newBoardState;
+                    }
+                    child = new MonteCarloNode<T, T1>(node, state, (move.key, gameMove.Move), GetOtherPlayer(player), node.Depth + 1);
                     if (nodesSet != null)
                     {
                         nodesSet.Add(child);
                     }
-                    node.Children.Add(move, child);
+                    node.Children.Add(move.key, child);
                 }
                 else
                 {
-                    child = node.Children[move];
+                    child = node.Children[move.key];
                     state = child.CurrentState;
                 }
                 BoardState boardState = state.CheckBoardState(gameMove,true);
@@ -218,7 +225,7 @@ namespace NeuralNetTreeStuffViewer
                         node.GameInfo += childGameInfo;
                         if (child.FullyExplored)
                         {
-                            node.AvailableMoves.Remove(move);
+                            node.AvailableMoves.Remove(move.key);
                             if (node.AvailableMoves.Count == 0)
                             {
                                 node.FullyExplored = true;
@@ -232,7 +239,7 @@ namespace NeuralNetTreeStuffViewer
                 child.ClearMoves();
                 child.EndOfGame = true;
                 child.FullyExplored = true;
-                node.AvailableMoves.Remove(move);
+                node.AvailableMoves.Remove(move.key);
                 if (node.AvailableMoves.Count == 0)
                 {
                     node.FullyExplored = true;

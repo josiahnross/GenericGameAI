@@ -13,7 +13,7 @@ namespace NeuralNetTreeStuffViewer
         MonteCarloTree<T, T1> tree;
         public MonteCarloNode<T, T1> CurrentNode;
         Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction;
-        Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc;
+        Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc;
         double explorationParam;
         int startSimulations;
         int simulationsPerTurn;
@@ -39,7 +39,7 @@ namespace NeuralNetTreeStuffViewer
             return new MonteCarloEvaluator<T, T1>(this);
         }
         public MonteCarloEvaluator(Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam,
-            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc, int startSimulations, int simulationsPerTurn, 
+            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc, int startSimulations, int simulationsPerTurn, 
             ITurnBasedGame<T, T1> game, int maxDepth, bool checkForLoops, Players startPlayer = Players.YouOrFirst)
         {
             this.selectionFunction = selectionFunction;

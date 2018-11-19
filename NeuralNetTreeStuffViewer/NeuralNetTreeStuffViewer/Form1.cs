@@ -221,7 +221,7 @@ namespace NeuralNetTreeStuffViewer
                 Console.Clear();
                 Console.WriteLine(stopwatch.ElapsedMilliseconds / 1000f);
             }
-            else if (false)
+            else if (true)
             {
                 checkersNet = NeuralNetwork.Deserialize(File.ReadAllText(netPath));
                 Checkers checkers = new Checkers();
@@ -234,51 +234,67 @@ namespace NeuralNetTreeStuffViewer
                 IEvaluateableTurnBasedGame<Checkers, CheckersMove> eval = new JustEvaluator<Checkers, CheckersMove>(NeuralNetEval, checkersEvaluator);
                 checkersEvaluator.SetEvaluator(eval);
             }
-            else
+            else if(false)
             {
                 Chess chess = new Chess();
                 chess.DisplayGame(gamePanel);
-                int maxDepth = 100;
+                int maxDepth = 300;
 
-                netPath = "chessGen0Net.txt";
-                string path = "chessInputOutputsMinMax0.txt";
-                string debugPath = "chessDebugInputOutputsMinMax0.txt";
+                netPath = "chessGen2Net.txt";
+                string path = "chessInputOutputsMinMax2.txt";
+                string debugPath = "chessDebugInputOutputsMinMax2.txt";
                 NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 321, 250, 100, 50, 30, 20, 10, 1);
                 Backpropagation backProp = new Backpropagation(net);
                 NeuralNetGameTrainer<Chess, ChessMove> trainer = new NeuralNetGameTrainer<Chess, ChessMove>(backProp, null, path, debugPath);
 
                 var monteCarloEvaluator = new MonteCarloEvaluator<Chess, ChessMove>(MonteCarloTree<Chess, ChessMove>.UTCSelection,
-                 Math.Sqrt(2), NeuralNetGameTrainer<Chess, ChessMove>.RandomChooseMove, 0, 8, new Chess(), maxDepth, true);
-                MinMaxEvaluator<Chess, ChessMove> minMaxEvaluator = new MinMaxEvaluator<Chess, ChessMove>(new Chess(), null, 1, null);
+                 Math.Sqrt(2), trainer.NetChooseMoveOutofRandomWithValue, 0, 4, new Chess(), maxDepth, true);
+                MinMaxEvaluator<Chess, ChessMove> minMaxEvaluator = new MinMaxEvaluator<Chess, ChessMove>(new Chess(), null, 0, null);
                 IEvaluateableTurnBasedGame<Chess, ChessMove> eval = new JustEvaluator<Chess, ChessMove>(trainer.NeuralNetEval, minMaxEvaluator);
                 minMaxEvaluator.Evaluator = monteCarloEvaluator;
                 double maxOut = 10;
 
-                //trainer.LoadNeuralNet(netPath);
+                trainer.LoadNeuralNet("chessGen1Net.txt");
 
-                trainer.GetTrainingInputs(new Chess(), 20, maxDepth, ChooseMoveEvaluators.Random);
+                trainer.GetTrainingInputs(new Chess(), 15, maxDepth, ChooseMoveEvaluators.WeightedNeualNet);
                 trainer.GetTrainingOutputs(minMaxEvaluator, 40, path, debugPath);
                 trainer.PruneInputOutputs(maxOut);
                 trainer.StoreInputOutputs(path);
                 trainer.StoreDebugInputOutputs(debugPath);
 
-                trainer.TrainNeuralNet(10000, .00001f, 0.1f, 0, 1, 0, maxOut, true, false, netPath, 0.8f);
+                trainer.TrainNeuralNet(10000, .00005f, 0.15f, 0, 1, 0, maxOut, true, false, netPath, 0.8f, 3);
+            }
+            else
+            {
+                netPath = "chessGen0Net.txt";
+                NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 321, 250, 100, 50, 30, 20, 10, 1);
+                Backpropagation backProp = new Backpropagation(net);
+                NeuralNetGameTrainer<Chess, ChessMove> trainer = new NeuralNetGameTrainer<Chess, ChessMove>(backProp);
+                trainer.LoadNeuralNet(netPath);
 
+                Chess chess = new Chess();
+                chess.DisplayGame(gamePanel);
+                uint minMaxDepth = 3;
+                var chessEvaluator = new MinMaxTurnBasedGameInterface<Chess, ChessMove>(new Chess(), chess,
+                    AIFirst, minMaxDepth, debugInfoPath);
+
+                IEvaluateableTurnBasedGame<Chess, ChessMove> eval = new JustEvaluator<Chess, ChessMove>(trainer.NeuralNetEval, chessEvaluator);
+                chessEvaluator.SetEvaluator(eval);
             }
         }
 
 
-        public int RandomMoveSelectionFunc(ITurnBasedGame<TickTacToe, BoardPosition> game, Dictionary<int, BoardPosition> avaialableMoves, Players player)
+        public (int key, ITurnBasedGame<TickTacToe, BoardPosition> newBoardState) RandomMoveSelectionFunc(ITurnBasedGame<TickTacToe, BoardPosition> game, Dictionary<int, BoardPosition> avaialableMoves, Players player)
         {
-            return avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
+            return (avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key, null);//TO DO: make more efficent
         }
-        public int RandomMoveSelectionFunc(ITurnBasedGame<ConnectFour, int> game, Dictionary<int, int> avaialableMoves, Players player)
+        public (int key, ITurnBasedGame<ConnectFour, int> newBoardState) RandomMoveSelectionFunc(ITurnBasedGame<ConnectFour, int> game, Dictionary<int, int> avaialableMoves, Players player)
         {
-            return avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
+            return (avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key, null);//TO DO: make more efficent
         }
-        public int RandomMoveSelectionFunc(ITurnBasedGame<Checkers, CheckersMove> game, Dictionary<int, CheckersMove> avaialableMoves, Players player)
+        public (int key, ITurnBasedGame<Checkers, CheckersMove> newBoardState) RandomMoveSelectionFunc(ITurnBasedGame<Checkers, CheckersMove> game, Dictionary<int, CheckersMove> avaialableMoves, Players player)
         {
-            return avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;//TO DO: make more efficent
+            return (avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key, null);//TO DO: make more efficent
         }
 
         double RandomFunc()

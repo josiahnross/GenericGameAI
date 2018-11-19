@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -10,6 +11,7 @@ namespace NeuralNetTreeStuffViewer
 {
     public class Chess : ITurnBasedGame<Chess, ChessMove>
     {
+        [JsonIgnore]
         public ChessPiece this[BoardPosition position]
         {
             get
@@ -17,25 +19,41 @@ namespace NeuralNetTreeStuffViewer
                 return board[position];
             }
         }
+        [JsonIgnore]
         static My2dArray<ChessPiece> startBoard = null;
+        [JsonIgnore]
         static Dictionary<ChessPieces, MoveInfo> pieceRanges;
+        [JsonIgnore]
         static Dictionary<Players, Dictionary<ChessPieces, Bitmap>> pieceImages;
+        [JsonIgnore]
         static Bitmap noneImage;
+        [JsonIgnore]
         public Dictionary<Players, HashSet<ChessPiece>> newUnToggleList { get; private set; }
+        [JsonIgnore]
         HashSet<ChessPiece> unToggleList;
+        [JsonProperty]
         My2dArray<ChessPiece> board;
+        [JsonIgnore]
         HashSet<ChessPiece> firstPieces;
+        [JsonIgnore]
         HashSet<ChessPiece> secondPieces;
+        [JsonIgnore]
         ChessPiece firstKing;
+        [JsonIgnore]
         ChessPiece secondKing;
+        [JsonProperty]
         BoardState? finishedGame;
+        [JsonProperty]
         Players currentPlayer;
+        [JsonProperty]
         Players startPlayer;
 
         public event EventHandler<GameButtonArgs<(GameMove<ChessMove> move, bool done)>> MoveMade;
 
+        [JsonIgnore]
         public Chess Game => this;
-
+        
+        [JsonIgnore]
         static int totalAmountOfMoves = -1;
 
         public int TotalAmountOfMoves
@@ -51,11 +69,18 @@ namespace NeuralNetTreeStuffViewer
                 return totalAmountOfMoves;
             }
         }
+
+        [JsonConstructor]
+        public Chess()
+            :this(Players.YouOrFirst)
+        {
+        }
+
         public Chess(Chess other)
         {
             Copy(other, this);
         }
-        public Chess(Players startPlayer = Players.YouOrFirst)
+        public Chess(Players startPlayer)
         {
             if (startBoard == null)
             {
@@ -597,7 +622,13 @@ namespace NeuralNetTreeStuffViewer
                 (newPos, piece) => {return GetRelativePosition(piece.Player, newPos).Y == board.YLength-1; },
                 (pos,currPiece,newPos,newPiece,player,board, movedPieces)=>
                 {
-                    return (GetRelativePosition(player, pos).Y == 1, MoveInfo.DefaultMovedPieces(pos,currPiece, newPos,newPiece, board), newPos);
+                    if (newPiece.Player == Players.None && GetRelativePosition(player, pos).Y == 1)
+                    {
+                        Dictionary<ChessPiece, BoardPosition?> dict = new Dictionary<ChessPiece, BoardPosition?>();
+                        dict.Add(currPiece, newPos);
+                        return (true, dict, null);
+                    }
+                    return (false, null, null);
                 },
                 (pos,currPiece,newPos,newPiece,player,board, movedPieces, queenNotKnight)=>
                 {
@@ -1172,9 +1203,22 @@ namespace NeuralNetTreeStuffViewer
         {
             firstPieces = new HashSet<ChessPiece>();
             secondPieces = new HashSet<ChessPiece>();
+            unToggleList = new HashSet<ChessPiece>();
+            newUnToggleList = new Dictionary<Players, HashSet<ChessPiece>>();
+            newUnToggleList.Add(Players.YouOrFirst, new HashSet<ChessPiece>());
+            newUnToggleList.Add(Players.OpponentOrSecond, new HashSet<ChessPiece>());
             for (int i = 0; i < board.Array.Length; i++)
             {
-                if (board.Array[i].Player == Players.YouOrFirst)
+                Players player = board.Array[i].Player;
+                if (unToggleList.Contains(board.Array[i]))
+                {
+                    unToggleList.Add(board.Array[i]);
+                }
+                if (player != Players.None && newUnToggleList[player].Contains(board.Array[i]))
+                {
+                    newUnToggleList[player].Add(board.Array[i]);
+                }
+                if (player == Players.YouOrFirst)
                 {
                     firstPieces.Add(board.Array[i]);
                     if (board.Array[i].Piece == ChessPieces.King)
@@ -1237,7 +1281,9 @@ namespace NeuralNetTreeStuffViewer
 
     public class ChessPiece
     {
+        [JsonProperty]
         BoardPosition position;
+        [JsonIgnore]
         public BoardPosition Position
         {
             get
@@ -1250,10 +1296,15 @@ namespace NeuralNetTreeStuffViewer
                 HasMoved = true;
             }
         }
+        [JsonProperty]
         public bool TagedBool { get; set; }
+        [JsonProperty]
         public bool TagedBool2 { get; private set; }
+        [JsonProperty]
         public Players Player { get; set; }
+        [JsonProperty]
         public ChessPieces Piece { get; set; }
+        [JsonProperty]
         public bool HasMoved { get; private set; }
         public ChessPiece(BoardPosition pos, Players player, ChessPieces piece)
         {

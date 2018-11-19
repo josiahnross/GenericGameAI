@@ -67,7 +67,7 @@ namespace NeuralNetTreeStuffViewer
             for (int i = 0; i < inputOutputs.Count; i++)
             {
                 double[] inputOutput;
-                if(policyNet)
+                if (policyNet)
                 {
                     inputOutput = inputOutputs[i].PolicyOutput;
                 }
@@ -122,7 +122,7 @@ namespace NeuralNetTreeStuffViewer
 
             double error = 0;
             Backpropagation trainBackProp = backPropV;
-            if(policyNet)
+            if (policyNet)
             {
                 trainBackProp = backPropPolicy;
             }
@@ -137,7 +137,7 @@ namespace NeuralNetTreeStuffViewer
                 error /= inputs.Length;
                 Console.WriteLine(error);
                 File.WriteAllText(netPath, trainBackProp.Net.Serialize());
-                if(testInputs.Length > 0 && epoc %testRate == 0)
+                if (testInputs.Length > 0 && epoc % testRate == 0)
                 {
                     var testOut = trainBackProp.GetOutputs(testInputs);
                     double testError = trainBackProp.ErrorFunc.Invoke(trainBackProp.Net, testInputs, testOutputs, testOut, 0, testInputs.Length).Average;
@@ -146,7 +146,7 @@ namespace NeuralNetTreeStuffViewer
                 epoc++;
             } while (error >= stopError);
         }
-        
+
 
         public double Normalize(double value, double min, double max)
         {
@@ -160,7 +160,7 @@ namespace NeuralNetTreeStuffViewer
                 double[] outputs = inputOutputs[i].Output;
                 if (inputOutputs[i].Output != null && (inputOutputs[i].Output[0] == double.MaxValue || inputOutputs[i].Output[0] == double.MinValue))
                 {
-                    if(inputOutputs[i].Output[0] == double.MaxValue)
+                    if (inputOutputs[i].Output[0] == double.MaxValue)
                     {
                         outputs[0] = maxUnNormalizedOutput;
                     }
@@ -176,11 +176,11 @@ namespace NeuralNetTreeStuffViewer
                     {
                         outputs[0] = 0;
                     }
-                    else if(state == BoardState.Win)
+                    else if (state == BoardState.Win)
                     {
                         outputs[0] = maxUnNormalizedOutput;
                     }
-                    else if(state == BoardState.Draw)
+                    else if (state == BoardState.Draw)
                     {
                         outputs[0] = -maxUnNormalizedOutput;
                     }
@@ -199,11 +199,13 @@ namespace NeuralNetTreeStuffViewer
         {
             File.WriteAllText(path, JsonConvert.SerializeObject(debugInputOutputs));
         }
+
         public void GetTrainingOutputs(IEvaluateableTurnBasedGame<T, T1> evaluator, int storeAmount = -1, string path = null, string debugPath = null)
         {
             int count = 0;
             for (int i = 0; i < inputOutputs.Count; i++)
             {
+                inputOutputs[i] = new InputOutputPair<T, T1>(inputOutputs[i].GameInputs, null, inputOutputs[i].PolicyOutput);
                 var test = inputOutputs[i];
                 if (inputOutputs[i].Output == null)
                 {
@@ -237,7 +239,7 @@ namespace NeuralNetTreeStuffViewer
                     Players p = inputOutputs[i].GameInputs.Player;
                     var avaialableMoves = inputOutputs[i].GameInputs.CurrentState.AvailableMoves(p);
                     double[] outputs = new double[inputOutputs[i].GameInputs.CurrentState.TotalAmountOfMoves];
-                    for(int j = 0; j < outputs.Length; j++)
+                    for (int j = 0; j < outputs.Length; j++)
                     {
                         if (p == Players.YouOrFirst)
                         {
@@ -263,9 +265,41 @@ namespace NeuralNetTreeStuffViewer
             }
         }
 
+        public void GetTrainingInputs(ITurnBasedGame<T, T1> game, int amountOfSims, int maxDepth, ChooseMoveEvaluators chooseMoveEvaluator, Players startPlayer = Players.YouOrFirst)
+        {
+            if (inputOutputs.Count == 0)
+            {
+                Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc = null;
+                if (chooseMoveEvaluator == ChooseMoveEvaluators.Random)
+                {
+                    chooseMoveFunc = RandomChooseMove;
+                }
+                else if (chooseMoveEvaluator == ChooseMoveEvaluators.NeuarlNet)
+                {
+                    chooseMoveFunc = NetChooseMoveWithValue;
+                }
+                else if (chooseMoveEvaluator == ChooseMoveEvaluators.WeightedNeualNet)
+                {
+                    chooseMoveFunc = NetChooseMoveWithWeightedValue;
+                }
+                MonteCarloTree<T, T1> tree = new MonteCarloTree<T, T1>(game, MonteCarloTree<T, T1>.UTCSelection, Math.Sqrt(2), chooseMoveFunc, maxDepth, startPlayer);
+                HashSet<MonteCarloNode<T, T1>> nodes = new HashSet<MonteCarloNode<T, T1>>();
+                tree.RunMonteCarloSims(amountOfSims, true, tree.Root, nodes);
+                foreach (var n in nodes)
+                {
+                    var player = n.Player;
+                    var newInput = new InputOutputPair<T, T1>(new GameInputs<T, T1>(n.CurrentState.GetInputs(player), (T)n.CurrentState, player), null, null);
+                    inputOutputs.Add(newInput);
+
+                    debugInputOutputs.Add(new InputOutputDebugInfo(newInput.GameInputs.GetBoardInfo(), newInput.Output, null, newInput.GameInputs.Player));
+                }
+            }
+        }
+
+
         public void GetValuePolicyTrainingOutputs(int maxDepth, ITurnBasedGame<T, T1> game, bool useNetForMCT, int storeAmount = -1, string path = null, string debugPath = null)
         {
-            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> mtcEvalFunc = RandomChooseMove;
+            Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> mtcEvalFunc = RandomChooseMove;
             if (useNetForMCT)
             {
                 mtcEvalFunc = NetChooseMoveWithPolicy;
@@ -310,65 +344,36 @@ namespace NeuralNetTreeStuffViewer
                 }
             }
         }
-
-        public void GetTrainingInputs(ITurnBasedGame<T, T1> game, int amountOfSims, int maxDepth, ChooseMoveEvaluators chooseMoveEvaluator, Players startPlayer = Players.YouOrFirst)
+        
+        public (int key, ITurnBasedGame<T, T1> newBoardState) NetChooseMoveWithWeightedValue(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
         {
-            if (inputOutputs.Count == 0)
+            if (avaialableMoves.Count == 0)
             {
-                Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, int> chooseMoveFunc = null;
-                if(chooseMoveEvaluator == ChooseMoveEvaluators.Random)
+                foreach (var m in avaialableMoves)
                 {
-                    chooseMoveFunc = RandomChooseMove;
-                }
-                else if(chooseMoveEvaluator == ChooseMoveEvaluators.NeuarlNet)
-                {
-                    chooseMoveFunc = NetChooseMoveWithValue;
-                }
-                else if(chooseMoveEvaluator == ChooseMoveEvaluators.WeightedNeualNet)
-                {
-                    chooseMoveFunc = NetChooseMoveWithWeightedValue;
-                }
-                MonteCarloTree<T, T1> tree = new MonteCarloTree<T, T1>(game, MonteCarloTree<T, T1>.UTCSelection, Math.Sqrt(2), chooseMoveFunc, maxDepth, startPlayer);
-                HashSet<MonteCarloNode<T, T1>> nodes = new HashSet<MonteCarloNode<T, T1>>();
-                tree.RunMonteCarloSims(amountOfSims, true, tree.Root, nodes);
-                foreach (var n in nodes)
-                {
-                    var player = n.Player;
-                    var newInput = new InputOutputPair<T, T1>(new GameInputs<T, T1>(n.CurrentState.GetInputs(player), (T)n.CurrentState, player), null, null);
-                    inputOutputs.Add(newInput);
-
-                    debugInputOutputs.Add(new InputOutputDebugInfo(newInput.GameInputs.GetBoardInfo(), newInput.Output, null, newInput.GameInputs.Player));
-                }
-            }
-        }
-
-        public int NetChooseMoveWithWeightedValue(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
-        {
-            if(avaialableMoves.Count == 0)
-            {
-                foreach(var m in avaialableMoves)
-                {
-                    return m.Key;
+                    return (m.Key, null);
                 }
             }
             double valMultiplier = 1;
-            if(player == Players.OpponentOrSecond)
+            if (player == Players.OpponentOrSecond)
             {
                 valMultiplier = -1;
             }
             double minVal = double.MaxValue;
             double totalVal = 0;
             Dictionary<int, double> values = new Dictionary<int, double>();
+            Dictionary<int, ITurnBasedGame<T, T1>> createdStates = new Dictionary<int, ITurnBasedGame<T, T1>>();
             foreach (var m in avaialableMoves)
             {
                 var state = game.Copy();
                 state.MakeMove(new GameMove<T1>(m.Value, player));
+                createdStates.Add(m.Key, state);
                 double[] inputs = state.GetInputs(Funcs.OppositePlayer(player));
 
                 double[] outputs = backPropV.Net.Compute(inputs);
 
-                double value = outputs[0]* valMultiplier;
-                if(value < minVal)
+                double value = outputs[0] * valMultiplier;
+                if (value < minVal)
                 {
                     minVal = value;
                 }
@@ -382,27 +387,34 @@ namespace NeuralNetTreeStuffViewer
             random -= minValDifference;
             double closestValueDifference = double.MaxValue;
             int closestKey = -1;
-            foreach(var v in values)
+            foreach (var v in values)
             {
-                if(v.Value <= random)
+                if (v.Value <= random)
                 {
-                    if(v.Value == random)
+                    if (v.Value == random)
                     {
-                        return v.Key;
+                        return (v.Key, createdStates[v.Key]);
                     }
                     double difference = random - v.Value;
-                    if(difference < closestValueDifference)
+                    if (difference < closestValueDifference)
                     {
                         closestValueDifference = difference;
                         closestKey = v.Key;
                     }
                 }
             }
-            return closestKey;
+            return (closestKey, createdStates[closestKey]);
         }
 
-        public int NetChooseMoveWithValue(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
+        public (int key, ITurnBasedGame<T, T1> newBoardState) NetChooseMoveWithValue(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
         {
+            if (avaialableMoves.Count == 1)
+            {
+                foreach (var m in avaialableMoves)
+                {
+                    return (m.Key, null);
+                }
+            }
             double maxMove;
             int index = int.MinValue;
             if (player == Players.YouOrFirst)
@@ -413,10 +425,12 @@ namespace NeuralNetTreeStuffViewer
             {
                 maxMove = double.MaxValue;
             }
+            Dictionary<int, ITurnBasedGame<T, T1>> newStates = new Dictionary<int, ITurnBasedGame<T, T1>>();
             foreach (var m in avaialableMoves)
             {
                 var state = game.Copy();
                 state.MakeMove(new GameMove<T1>(m.Value, player));
+                newStates.Add(m.Key, state);
                 double[] inputs = state.GetInputs(Funcs.OppositePlayer(player));
 
                 double[] outputs = backPropV.Net.Compute(inputs);
@@ -425,12 +439,11 @@ namespace NeuralNetTreeStuffViewer
                     maxMove = outputs[0];
                     index = m.Key;
                 }
-
             }
-            return index;
+            return (index, newStates[index]);
         }
 
-        public int NetChooseMoveWithPolicy(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
+        public (int key, ITurnBasedGame<T, T1> newBoardState) NetChooseMoveWithPolicy(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
         {
             double[] inputs = game.GetInputs(Funcs.OppositePlayer(player));
 
@@ -447,7 +460,69 @@ namespace NeuralNetTreeStuffViewer
                     key = m.Key;
                 }
             }
-            return key;
+            return (key, null);
+        }
+
+        int amountOfRandomValues = 4;
+        public (int key, ITurnBasedGame<T, T1> newBoardState) NetChooseMoveOutofRandomWithValue(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
+        {
+            if (avaialableMoves.Count == 1)
+            {
+                foreach (var m in avaialableMoves)
+                {
+                    return (m.Key, null);
+                }
+            }
+            double maxMove;
+            int index = int.MinValue;
+            if (player == Players.YouOrFirst)
+            {
+                maxMove = double.MinValue;
+            }
+            else
+            {
+                maxMove = double.MaxValue;
+            }
+            Dictionary<int, T1> randAvaialableMoves;
+            if(avaialableMoves.Count <=amountOfRandomValues)
+            {
+                randAvaialableMoves = avaialableMoves;
+            }
+            else
+            {
+                randAvaialableMoves = new Dictionary<int, T1>(amountOfRandomValues);
+                for(int i = 0; i < amountOfRandomValues; i++)
+                {
+                    var key = avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;
+                    randAvaialableMoves.Add(key, avaialableMoves[key]);
+                    avaialableMoves.Remove(key);
+                }
+                foreach(var m in randAvaialableMoves)
+                {
+                    avaialableMoves.Add(m.Key, m.Value);
+                }
+            }
+            Dictionary<int, ITurnBasedGame<T, T1>> newStates = new Dictionary<int, ITurnBasedGame<T, T1>>();
+            foreach (var m in randAvaialableMoves)
+            {
+                var state = game.Copy();
+                state.MakeMove(new GameMove<T1>(m.Value, player));
+                newStates.Add(m.Key, state);
+                double[] inputs = state.GetInputs(Funcs.OppositePlayer(player));
+
+                double[] outputs = backPropV.Net.Compute(inputs);
+                if (Better(maxMove, outputs[0], player))
+                {
+                    maxMove = outputs[0];
+                    index = m.Key;
+                }
+            }
+            return (index, newStates[index]);
+        }
+        public static (int key, ITurnBasedGame<T, T1> newBoardState) RandomChooseMove(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
+        {
+            var val = avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;
+            return (val, null);
         }
 
         public double NeuralNetEval(ITurnBasedGame<T, T1> game, Players player)
@@ -479,11 +554,7 @@ namespace NeuralNetTreeStuffViewer
                 throw new NullReferenceException();
             }
         }
-        public static int RandomChooseMove(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
-        {
-            var val = avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;
-            return val;
-        }
+        
     }
     public enum ChooseMoveEvaluators
     {
@@ -496,7 +567,7 @@ namespace NeuralNetTreeStuffViewer
         public GameInputs<T, T1> GameInputs { get; set; }
         public double[] Output { get; set; }
         public double[] PolicyOutput { get; set; }
-        
+
 
         public InputOutputPair(GameInputs<T, T1> gameInputs, double[] output, double[] policyOutput)
         {
