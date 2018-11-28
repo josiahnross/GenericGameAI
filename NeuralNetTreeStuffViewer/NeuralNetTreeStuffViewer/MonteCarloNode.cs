@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public class MonteCarloNode<T, T1> where T : ITurnBasedGame<T, T1>
+    public class MonteCarloNode<T, T1> where T : ITurnBasedGame<T, T1>,new()
     {
         public NodeGameInfo GameInfo { get; set; }
         public Dictionary<int, MonteCarloNode<T, T1>> Children { get; }
@@ -18,14 +18,14 @@ namespace NeuralNetTreeStuffViewer
         public (int index, T1 move) MoveIndex { get; }
         public int TotalAvialableMovesCount { get; private set; }
         public bool EndOfGame { get; set; }
-        public int Depth { get; }
+        public int Depth { get; set; }
         public MonteCarloNode(MonteCarloNode<T, T1> parent, ITurnBasedGame<T, T1> currentState, (int index, T1 move) moveIndex, Players player, int depth)
         {
             EndOfGame = false;
             FullyExplored = false;
             Player = player;
             Parent = parent;
-            GameInfo = new NodeGameInfo(0, 0, 0,0);
+            GameInfo = new NodeGameInfo(0, 0, 0,0,0,0);
             Children = new Dictionary<int, MonteCarloNode<T, T1>>();
             CurrentState = currentState;
             AvailableMoves = currentState.AvailableMoves(Player);
@@ -45,7 +45,7 @@ namespace NeuralNetTreeStuffViewer
         }
     }
     public struct MonteCarloNodeValue<T, T1> : IComparable<MonteCarloNodeValue<T, T1>> 
-        where T : ITurnBasedGame<T, T1>
+        where T : ITurnBasedGame<T, T1>,new()
     {
         public MonteCarloNode<T, T1> Node { get; set; }
         public double Value { get; set; }
@@ -67,16 +67,20 @@ namespace NeuralNetTreeStuffViewer
         public int AmountOfGames { get { return Player1AmountOfGames + Player2AmountOfGames; } }
         public int Player1AmountOfGames { get; set; }
         public int Player2AmountOfGames { get; set; }
-        public NodeGameInfo(int player1Wins, int player2Wins, int player1AmountOfGames, int player2AmountOfGames)
+        public int Player1TotalDepth { get; set; }
+        public int Player2TotalDepth { get; set; }
+        public NodeGameInfo(int player1Wins, int player2Wins, int player1AmountOfGames, int player2AmountOfGames, int player1TotalDepth, int player2TotalDepth)
         {
             Player1Wins = player1Wins;
             Player2Wins = player2Wins;
             Player1AmountOfGames = player1AmountOfGames;
             Player2AmountOfGames = player2AmountOfGames;
+            Player1TotalDepth = player1TotalDepth;
+            Player2TotalDepth = player2TotalDepth;
         }
         public static NodeGameInfo operator +(NodeGameInfo left, NodeGameInfo right)
         {
-            return new NodeGameInfo(left.Player1Wins + right.Player1Wins, left.Player2Wins + right.Player2Wins, left.Player1AmountOfGames + right.Player1AmountOfGames, left.Player2AmountOfGames + right.Player2AmountOfGames);
+            return new NodeGameInfo(left.Player1Wins + right.Player1Wins, left.Player2Wins + right.Player2Wins, left.Player1AmountOfGames + right.Player1AmountOfGames, left.Player2AmountOfGames + right.Player2AmountOfGames, left.Player1TotalDepth + right.Player1TotalDepth, left.Player2TotalDepth + right.Player2TotalDepth);
         }
     }
 }

@@ -35,13 +35,23 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
             return TrainBatch(inputs, desiredOutputs, learningRate, 0, inputs.Length);
         }
 
-        public ErrorInfo TrainBatch(double[][] inputs, double[][] desiredOutputs, double learningRate, int startIndex, int count)
+        public ErrorInfo TrainBatch(double[][] inputs, double[][] desiredOutputs, double learningRate, int startIndex, int count, bool parralelize = false)
         {
             learningRate = Extensions.Clamp(learningRate, 0, 1);
             double[][] outputs = new double[inputs.Length][];
-            for (int i = startIndex; i < count+startIndex && i < inputs.Length; i++)
+            if (!parralelize)
             {
-                outputs[i] = Train(inputs[i], desiredOutputs[i], learningRate);
+                for (int i = startIndex; i < count + startIndex && i < inputs.Length; i++)
+                {
+                    outputs[i] = Train(inputs[i], desiredOutputs[i], learningRate);
+                }
+            }
+            else
+            {
+                Parallel.For(startIndex, Math.Min(count + startIndex, inputs.Length), i =>
+                {
+                    outputs[i] = Train(inputs[i], desiredOutputs[i], learningRate);
+                });
             }
             ApplyAndClearUpdates();
             

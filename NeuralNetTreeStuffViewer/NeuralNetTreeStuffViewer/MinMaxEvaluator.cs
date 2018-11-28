@@ -8,12 +8,14 @@ using System.Threading.Tasks;
 namespace NeuralNetTreeStuffViewer
 {
     public class MinMaxEvaluator<T, T1> : IEvaluateableTurnBasedGame<T, T1>
-        where T : ITurnBasedGame<T, T1>
+        where T : ITurnBasedGame<T, T1>,new()
         where T1 : struct
     {
         public uint MakeMoveMinMaxDepth { get; set; }
         public IEvaluateableTurnBasedGame<T, T1> Evaluator { get; set; }
         public ITurnBasedGame<T, T1> Game { get; }
+        IEvaluateableTurnBasedGame<T, T1> parentEval = null;
+        public IEvaluateableTurnBasedGame<T, T1> ParentEval { get => parentEval; set { parentEval = value; } }
 
         protected MinMaxEvaluator(MinMaxEvaluator<T, T1> minMaxEval, ITurnBasedGame<T, T1> game)
         {
@@ -47,12 +49,12 @@ namespace NeuralNetTreeStuffViewer
             return copy;
         }
 
-        public double EvaluateCurrentState(Players player)
+        public double? EvaluateCurrentState(Players player, int depth = -1)
         {
             MinMaxNode<T, T1> node = MinMaxAlgorithm<T, T1>.EvaluateMoves(MakeMoveMinMaxDepth, Evaluator, isMaximizer(player));
             return node.Value;
         }
-        public double EvaluateCurrentState(ITurnBasedGame<T, T1> state, Players player)
+        public double? EvaluateCurrentState(ITurnBasedGame<T, T1> state, Players player, int depth = -1)
         {
             var tempEval = Evaluator.CopyWithNewState(state, player);
             MinMaxNode<T, T1> node = MinMaxAlgorithm<T, T1>.EvaluateMoves(MakeMoveMinMaxDepth, tempEval, isMaximizer(player));
@@ -98,6 +100,15 @@ namespace NeuralNetTreeStuffViewer
             Game.CheckBoardState(move, justCheckedAvaliableMoves);
         }
 
-
+        public void Stop(bool stop)
+        {
+            throw new NotImplementedException();
+        }
+        public IEvaluateableTurnBasedGame<T2, T11> Cast<T2, T11>()
+           where T2 : ITurnBasedGame<T2, T11>, new()
+           where T11 : struct
+        {
+            return (IEvaluateableTurnBasedGame<T2, T11>)this;
+        }
     }
 }

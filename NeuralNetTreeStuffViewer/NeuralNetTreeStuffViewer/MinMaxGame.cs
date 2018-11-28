@@ -33,6 +33,10 @@ namespace NeuralNetTreeStuffViewer
                 Nums[i] = game.Nums[i];
             }
         }
+        public MinMaxGame()
+        {
+            throw new NotImplementedException();
+        }
         public MinMaxGame(int depth, Func<double> randomFunc, double[] values = null)
         {
             this.Depth = depth;
@@ -279,6 +283,11 @@ namespace NeuralNetTreeStuffViewer
         }
 
         public BoardState CheckBoardState(Players currentPlayer, bool justCheckedAvilableMoves)
+        {
+            throw new NotImplementedException();
+        }
+
+        ITurnBasedGame ITurnBasedGame.Copy()
         {
             throw new NotImplementedException();
         }

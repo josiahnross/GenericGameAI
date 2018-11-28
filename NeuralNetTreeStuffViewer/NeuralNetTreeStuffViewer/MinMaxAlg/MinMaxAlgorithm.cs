@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer.MinMaxAlg
 {
-    public static class MinMaxAlgorithm<T, T1>
+    public static class MinMaxAlgorithm<T, T1> where T : new()
     {
         public static MinMaxNode<T, T1> EvaluateMoves(uint depth, IEvaluateableTurnBasedGame<T, T1> game, bool maximisingPlayer = true)
         {
@@ -25,7 +25,7 @@ namespace NeuralNetTreeStuffViewer.MinMaxAlg
                 }
                 if (boardState == BoardState.Continue)
                 {
-                    currentNode.Value = currentNode.CurrentState.EvaluateCurrentState(Funcs.GetPlayerFromBool(currentNode.MaxTurn));
+                    currentNode.Value = currentNode.CurrentState.EvaluateCurrentState(Funcs.GetPlayerFromBool(currentNode.MaxTurn)).Value;
                 }
                 else if (boardState == BoardState.Draw)
                 {

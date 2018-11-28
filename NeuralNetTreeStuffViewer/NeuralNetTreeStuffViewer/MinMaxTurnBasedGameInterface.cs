@@ -9,8 +9,25 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer
 {
+    public class MinMaxTurnBasedGameInterface
+    {
+        public ITurnBasedGame Game;
+        public ITurnBasedGame DisplayGame;
+        public bool AiFirst;
+        public uint MakeMoveMinMaxDepth;
+        public string DebugStringPath;
+        public IEvaluateableTurnBasedGame Evaluator;
+        public MinMaxTurnBasedGameInterface(ITurnBasedGame game, ITurnBasedGame displayGame, bool aiFirst, uint makeMoveMinMaxDepth = 5, string debugStringPath = null)
+        {
+            Game = game;
+            DisplayGame = displayGame;
+            AiFirst = aiFirst;
+            MakeMoveMinMaxDepth = makeMoveMinMaxDepth;
+            DebugStringPath = debugStringPath;
+        }
+    }
     public class MinMaxTurnBasedGameInterface<T, T1> : MinMaxEvaluator<T, T1>
-        where T : ITurnBasedGame<T, T1>
+        where T : ITurnBasedGame<T, T1>,new()
         where T1 : struct
     {
         public ITurnBasedGame<T, T1> DisplayGame { get; }
@@ -24,7 +41,13 @@ namespace NeuralNetTreeStuffViewer
             AiFirst = gameInterface.AiFirst;
             DebugStringPath = gameInterface.DebugStringPath;
         }
-
+        public MinMaxTurnBasedGameInterface(MinMaxTurnBasedGameInterface gameInterface)
+            :this((T)gameInterface.Game, (T)gameInterface.DisplayGame, gameInterface.AiFirst, gameInterface.MakeMoveMinMaxDepth, gameInterface.DebugStringPath)
+        {
+            Evaluator = gameInterface.Evaluator.Cast<T,T1>();
+            Evaluator.ParentEval = this;
+            SetEvaluator(Evaluator);
+        }
         public MinMaxTurnBasedGameInterface(T game, T displayGame, bool aiFirst, uint makeMoveMinMaxDepth = 5, string debugStringPath = null)
             : base(game, null, makeMoveMinMaxDepth, debugStringPath)
         {
@@ -132,6 +155,7 @@ namespace NeuralNetTreeStuffViewer
             MakeMove(move, moveIndex, false);
             DisplayGame.ComputerMakeMove(move.Move);
         }
+        
     }
 
 }

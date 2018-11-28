@@ -16,6 +16,7 @@ namespace ReadMinMaxNodeDebugInfo
     {
         Dictionary<string, (Action<string> init, Action<string, object> set)> debugInfoDisplayActions;
         Dictionary<Players, Dictionary<ChessPieces, Bitmap>> chessPieceImages;
+        Dictionary<ChessPieces, int> chessPieceValues;
         Bitmap noneImage;
         object actionInfo;
         public currentIndexTxtBox()
@@ -48,6 +49,13 @@ namespace ReadMinMaxNodeDebugInfo
             secondImages.Add(ChessPieces.Knight, Properties.Resources.blackKnight);
             secondImages.Add(ChessPieces.Pawn, Properties.Resources.blackPawn);
             noneImage = new Bitmap(1, 1);
+            chessPieceValues = new Dictionary<ChessPieces, int>();
+            chessPieceValues.Add(ChessPieces.Pawn, 1);
+            chessPieceValues.Add(ChessPieces.Bishop, 3);
+            chessPieceValues.Add(ChessPieces.Knight, 3);
+            chessPieceValues.Add(ChessPieces.Rook, 5);
+            chessPieceValues.Add(ChessPieces.Queen, 9);
+            chessPieceValues.Add(ChessPieces.King, 0);
             #endregion
         }
 
@@ -289,6 +297,7 @@ namespace ReadMinMaxNodeDebugInfo
         {
             string[] board = strBoard.Split(new char[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
             List<Button> buttons = (List<Button>)extraStuff;
+            int pieceCount = 0;
             for (int i = 0; i < board.Length; i++)
             {
                 string[] piece = board[i].Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
@@ -296,9 +305,18 @@ namespace ReadMinMaxNodeDebugInfo
                 Color color;
                 ChessPieces chessPiece = (ChessPieces)int.Parse(piece[2]);
                 Players player = (Players)int.Parse(piece[3]);
-
                 buttons[i].Image = GetChessPieceImage(player, chessPiece, buttons[i].Size);
+
+                if (player == Players.YouOrFirst)
+                {
+                    pieceCount += chessPieceValues[chessPiece];
+                }
+                else if (player == Players.OpponentOrSecond)
+                {
+                    pieceCount -= chessPieceValues[chessPiece];
+                }
             }
+            pieceCountLabel.Text = "Piece Difference: " + pieceCount;
         }
 
         Bitmap GetChessPieceImage(Players player, ChessPieces piece, Size buttonSize)

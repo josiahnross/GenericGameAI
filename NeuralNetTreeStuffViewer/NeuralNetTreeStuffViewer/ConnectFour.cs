@@ -27,7 +27,8 @@ namespace NeuralNetTreeStuffViewer
         {
             Copy(other, this);
         }
-
+        public ConnectFour()
+            : this(7, 6) { }
         public ConnectFour(int width, int height)
         {
             Width = width;
@@ -388,6 +389,10 @@ namespace NeuralNetTreeStuffViewer
                 return true;
             }
             return false;
+        }
+        ITurnBasedGame ITurnBasedGame.Copy()
+        {
+            return Copy();
         }
     }
 }

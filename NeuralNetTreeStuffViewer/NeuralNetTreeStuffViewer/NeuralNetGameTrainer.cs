@@ -7,47 +7,55 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public class NeuralNetGameTrainer<T, T1>
-        where T : ITurnBasedGame<T, T1>
+    public interface ITrainer
+    {
+        bool Parallel { get; set; }
+        bool CurrentlyParallel { get; }
+        void LoadNeuralNet(string path);
+        void LoadPolicyNeualNet(string path);
+        void TrainNeuralNet(int batchSize, double learningRate, double stopError, double minIn, double maxIn, double minOut, double maxOut, bool normilizeOnlyFirstOutput, bool policyNet, string netPath, double testDataPercent = 1, int testRate = 10, double ignoreZeroRate = 0);
+        void PruneInputOutputs(double maxUnNormalizedOutput);
+        void StoreInputOutputs(string path);
+        void WipeOutputs();
+        void Stop();
+    }
+    public class NeuralNetGameTrainer<T, T1> : ITrainer
+        where T : ITurnBasedGame<T, T1>, new()
         where T1 : struct
     {
-        List<InputOutputPair<T, T1>> inputOutputs;
-        List<InputOutputDebugInfo> debugInputOutputs;
+        public bool Parallel { get; set; }
+        public bool CurrentlyParallel { get; private set; }
+        List<InputOutput<T, T1>> inputOutputs;
+        //List<InputOutputDebugInfo> debugInputOutputs;
         Backpropagation backPropV;
         Backpropagation backPropPolicy;
+        IEvaluateableTurnBasedGame<T, T1>[] currentEvaluators;
         public NeuralNetGameTrainer(Backpropagation backProp, Backpropagation backPropPolicy = null, string inputOutputPath = null, string inputOutputDebugPath = null)
         {
+            Parallel = true;
             this.backPropV = backProp;
             this.backPropPolicy = backPropPolicy;
             if (inputOutputPath == null || !File.Exists(inputOutputPath))
             {
-                inputOutputs = new List<InputOutputPair<T, T1>>();
+                inputOutputs = new List<InputOutput<T, T1>>();
             }
             else
             {
                 string data = File.ReadAllText(inputOutputPath);
-                inputOutputs = JsonConvert.DeserializeObject<List<InputOutputPair<T, T1>>>(data);
+                inputOutputs = JsonConvert.DeserializeObject<List<InputOutput<T, T1>>>(data);
                 if (inputOutputs.Count > 0)
                 {
-                    inputOutputs[0].GameInputs.CurrentState.InitializeStaticVariables();
+                    inputOutputs[0].InputOutputPair.GameInputs.CurrentState.InitializeStaticVariables();
                     for (int i = 0; i < inputOutputs.Count; i++)
                     {
-                        inputOutputs[i].GameInputs.CurrentState.DeserializeInit();
+                        inputOutputs[i].InputOutputPair.GameInputs.CurrentState.DeserializeInit();
                     }
                 }
-            }
-
-            if (inputOutputDebugPath == null || !File.Exists(inputOutputDebugPath))
-            {
-                debugInputOutputs = new List<InputOutputDebugInfo>();
-            }
-            else
-            {
-                debugInputOutputs = JsonConvert.DeserializeObject<List<InputOutputDebugInfo>>(File.ReadAllText(inputOutputDebugPath));
             }
         }
         public void LoadNeuralNet(string path)
@@ -58,7 +66,7 @@ namespace NeuralNetTreeStuffViewer
         {
             backPropPolicy = new Backpropagation(NeuralNetwork.Deserialize(File.ReadAllText(path)), backPropPolicy.ErrorFunc);
         }
-        public void TrainNeuralNet(int batchSize, double learningRate, double stopError, double minIn, double maxIn, double minOut, double maxOut, bool normilizeOnlyFirstOutput, bool policyNet, string netPath, double testDataPercent = 1, int testRate = 10)
+        public void TrainNeuralNet(int batchSize, double learningRate, double stopError, double minIn, double maxIn, double minOut, double maxOut, bool normilizeOnlyFirstOutput, bool policyNet, string netPath, double testDataPercent = 1, int testRate = 10, double ignoreZeroRate = 0)
         {
             List<double[]> inputsL = new List<double[]>();
             List<double[]> outputsL = new List<double[]>();
@@ -69,18 +77,18 @@ namespace NeuralNetTreeStuffViewer
                 double[] inputOutput;
                 if (policyNet)
                 {
-                    inputOutput = inputOutputs[i].PolicyOutput;
+                    inputOutput = inputOutputs[i].InputOutputPair.PolicyOutput;
                 }
                 else
                 {
-                    inputOutput = inputOutputs[i].Output;
+                    inputOutput = inputOutputs[i].InputOutputPair.Output;
                 }
                 if (inputOutput != null)
                 {
-                    double[] input = new double[inputOutputs[i].GameInputs.Inputs.Length];
+                    double[] input = new double[inputOutputs[i].InputOutputPair.GameInputs.Inputs.Length];
                     for (int j = 0; j < input.Length; j++)
                     {
-                        input[j] = Normalize(inputOutputs[i].GameInputs.Inputs[j], minIn, maxIn);
+                        input[j] = Normalize(inputOutputs[i].InputOutputPair.GameInputs.Inputs[j], minIn, maxIn);
                     }
                     double[] output = new double[inputOutput.Length];
                     if (normilizeOnlyFirstOutput)
@@ -100,8 +108,11 @@ namespace NeuralNetTreeStuffViewer
                     }
                     if (Funcs.Random.NextDouble() <= testDataPercent)
                     {
-                        inputsL.Add(input);
-                        outputsL.Add(output);
+                        if (output[0] == 0 && ignoreZeroRate > 0 && Funcs.Random.NextDouble() > ignoreZeroRate)
+                        {
+                            inputsL.Add(input);
+                            outputsL.Add(output);
+                        }
                     }
                     else
                     {
@@ -131,7 +142,7 @@ namespace NeuralNetTreeStuffViewer
             {
                 for (int i = 0; i < inputs.Length; i += batchSize)
                 {
-                    var errorInfo = trainBackProp.TrainBatch(inputs, outputs, learningRate, i, batchSize);
+                    var errorInfo = trainBackProp.TrainBatch(inputs, outputs, learningRate, i, batchSize, false);
                     error += errorInfo.Total;
                 }
                 error /= inputs.Length;
@@ -147,7 +158,6 @@ namespace NeuralNetTreeStuffViewer
             } while (error >= stopError);
         }
 
-
         public double Normalize(double value, double min, double max)
         {
             return (value - min) / max;
@@ -157,10 +167,14 @@ namespace NeuralNetTreeStuffViewer
         {
             for (int i = 0; i < inputOutputs.Count; i++)
             {
-                double[] outputs = inputOutputs[i].Output;
-                if (inputOutputs[i].Output != null && (inputOutputs[i].Output[0] == double.MaxValue || inputOutputs[i].Output[0] == double.MinValue))
+                double[] outputs = inputOutputs[i].InputOutputPair.Output;
+                if (inputOutputs[i].InputOutputPair.Output != null && inputOutputs[i].InputOutputPair.Output[0] > maxUnNormalizedOutput)
                 {
-                    if (inputOutputs[i].Output[0] == double.MaxValue)
+                    inputOutputs[i].InputOutputPair.Output[0] = maxUnNormalizedOutput;
+                }
+                if (inputOutputs[i].InputOutputPair.Output != null && (inputOutputs[i].InputOutputPair.Output[0] == double.MaxValue || inputOutputs[i].InputOutputPair.Output[0] == double.MinValue))
+                {
+                    if (inputOutputs[i].InputOutputPair.Output[0] == double.MaxValue)
                     {
                         outputs[0] = maxUnNormalizedOutput;
                     }
@@ -171,7 +185,7 @@ namespace NeuralNetTreeStuffViewer
                 }
                 else
                 {
-                    BoardState state = inputOutputs[i].GameInputs.CurrentState.CheckBoardState(inputOutputs[i].GameInputs.Player, false);
+                    BoardState state = inputOutputs[i].InputOutputPair.GameInputs.CurrentState.CheckBoardState(inputOutputs[i].InputOutputPair.GameInputs.Player, false);
                     if (state == BoardState.Draw)
                     {
                         outputs[0] = 0;
@@ -186,8 +200,8 @@ namespace NeuralNetTreeStuffViewer
                     }
                 }
 
-                inputOutputs[i] = new InputOutputPair<T, T1>(inputOutputs[i].GameInputs, outputs, inputOutputs[i].PolicyOutput);
-                debugInputOutputs[i] = new InputOutputDebugInfo(debugInputOutputs[i].BoardInfo, outputs, debugInputOutputs[i].PolicyOutput, debugInputOutputs[i].Player);
+                inputOutputs[i] =new InputOutput<T, T1>(new InputOutputPair<T, T1>(inputOutputs[i].InputOutputPair.GameInputs, outputs, inputOutputs[i].InputOutputPair.PolicyOutput, inputOutputs[i].InputOutputPair.Depth),
+                                                        new InputOutputDebugInfo(inputOutputs[i].DebugInputOutput.BoardInfo, outputs, inputOutputs[i].DebugInputOutput.PolicyOutput, inputOutputs[i].DebugInputOutput.Player));
             }
         }
 
@@ -195,50 +209,128 @@ namespace NeuralNetTreeStuffViewer
         {
             File.WriteAllText(path, JsonConvert.SerializeObject(inputOutputs));
         }
-        public void StoreDebugInputOutputs(string path)
+        public void WipeOutputs()
         {
-            File.WriteAllText(path, JsonConvert.SerializeObject(debugInputOutputs));
-        }
-
-        public void GetTrainingOutputs(IEvaluateableTurnBasedGame<T, T1> evaluator, int storeAmount = -1, string path = null, string debugPath = null)
-        {
-            int count = 0;
             for (int i = 0; i < inputOutputs.Count; i++)
             {
-                inputOutputs[i] = new InputOutputPair<T, T1>(inputOutputs[i].GameInputs, null, inputOutputs[i].PolicyOutput);
-                var test = inputOutputs[i];
-                if (inputOutputs[i].Output == null)
+                if (inputOutputs[i].InputOutputPair.Output != null)
                 {
-                    double v = evaluator.EvaluateCurrentState(inputOutputs[i].GameInputs.CurrentState, inputOutputs[i].GameInputs.Player);
-                    inputOutputs[i] = new InputOutputPair<T, T1>(inputOutputs[i].GameInputs, new double[] { v }, null);
-                    debugInputOutputs[i] = new InputOutputDebugInfo(debugInputOutputs[i].BoardInfo, new double[] { v }, null, debugInputOutputs[i].Player);
-                    if (count > 0 && count % storeAmount == 0)
-                    {
-                        if (path != null)
-                        {
-                            StoreInputOutputs(path);
-                        }
-                        if (debugPath != null)
-                        {
-                            StoreDebugInputOutputs(debugPath);
-                        }
-                        Console.WriteLine(inputOutputs.Count - i - 1);
-                    }
-                    count++;
+                    inputOutputs[i] = new InputOutput<T, T1>(new InputOutputPair<T, T1>(inputOutputs[i].InputOutputPair.GameInputs, null, null, inputOutputs[i].InputOutputPair.Depth),
+                                                             new InputOutputDebugInfo(inputOutputs[i].DebugInputOutput.BoardInfo, null, null, inputOutputs[i].DebugInputOutput.Player));
                 }
             }
         }
+        public void GetTrainingOutputs(IEvaluateableTurnBasedGame<T, T1> evaluator, int storeAmount = -1, string path = null, string debugPath = null)
+        {
+            int count = 0;
+            int realCount = 0;
+            int parallelBatch = 100;
+
+            for (int j = 0; j < inputOutputs.Count; j += parallelBatch)
+            {
+                int amount = Math.Min(parallelBatch, inputOutputs.Count - j);
+                currentEvaluators = new IEvaluateableTurnBasedGame<T, T1>[amount];
+                bool parallelChange = false;
+                if (Parallel)
+                {
+                    CurrentlyParallel = true;
+                    System.Threading.Tasks.Parallel.For(0, amount, (i, state) =>
+                    {
+                        if (InsideLoop(i, j, true, evaluator, ref count, ref realCount, storeAmount))
+                        {
+                            state.Break();
+                        }
+                    });
+                    parallelChange = !Parallel;
+                }
+                else
+                {
+                    CurrentlyParallel = false;
+                    for (int i = 0; i < amount; i++)
+                    {
+                        InsideLoop(i, j, false, evaluator, ref count, ref realCount, storeAmount);
+                        if (Parallel)
+                        {
+                            break;
+                        }
+                    }
+                    parallelChange = Parallel;
+                }
+                if (realCount > 0)
+                {
+                    if (path != null)
+                    {
+                        StoreInputOutputs(path);
+                    }
+                    Console.WriteLine("Stored");
+                }
+                if (parallelChange)
+                {
+                    j -= parallelBatch;
+                    continue;
+                }
+            }
+
+        }
+        bool InsideLoop(int i, int j, bool inParallel, IEvaluateableTurnBasedGame<T, T1> evaluator, ref int count, ref int realCount, int storeAmount)
+        {
+            if ((inParallel && !Parallel) || (!inParallel && Parallel))
+            {
+                return true;
+            }
+            int index = i + j;
+            if (inputOutputs[index].InputOutputPair.Output == null)
+            {
+                var input = inputOutputs[index];
+                var currentState = input.InputOutputPair.GameInputs.CurrentState;
+                IEvaluateableTurnBasedGame<T, T1> currentEval = evaluator.CopyWithNewState(currentState, input.InputOutputPair.GameInputs.Player);
+                currentEvaluators[i] = currentEval;
+                var info = GetOutputs(input.InputOutputPair, input.DebugInputOutput, currentEval);
+                if (info.Item1.Output != null)
+                {
+                    inputOutputs[index].InputOutputPair = info.Item1;
+                    inputOutputs[index].DebugInputOutput = info.Item2;
+                    var currentCount = Interlocked.Increment(ref count);
+                    Interlocked.Increment(ref realCount);
+                    if (currentCount % storeAmount == 0)
+                    {
+                        var output = info.Item1.Output[0];
+                        Console.WriteLine(inputOutputs.Count - currentCount + " Output: " + output);
+                    }
+                }
+                else
+                {
+                    return true;
+                }
+            }
+            else
+            {
+                Interlocked.Increment(ref count);
+            }
+            return false;
+        }
+
+        //List<InputOutputPair<T, T1>> inputs, List<InputOutputDebugInfo> debugInputs, int i,
+        (InputOutputPair<T, T1>, InputOutputDebugInfo) GetOutputs(InputOutputPair<T, T1> input, InputOutputDebugInfo debugInfo, IEvaluateableTurnBasedGame<T, T1> evaluator)
+        {
+            double? v = evaluator.EvaluateCurrentState(/*inputs[i].GameInputs.CurrentState,*/ input.GameInputs.Player, 0);
+            var output = new InputOutputPair<T, T1>(input.GameInputs, v == null ? null : new double[] { v.Value }, null, input.Depth);
+            var debugOutput = new InputOutputDebugInfo(debugInfo.BoardInfo, v == null ? null : new double[] { v.Value }, null, debugInfo.Player);
+            return (output, debugOutput);
+        }
+
+
         public void GetPolicyOutputs(int storeAmount = -1, string path = null, string debugPath = null)
         {
             int count = 0;
             for (int i = 0; i < inputOutputs.Count; i++)
             {
                 var test = inputOutputs[i];
-                if (inputOutputs[i].PolicyOutput == null)
+                if (inputOutputs[i].InputOutputPair.PolicyOutput == null)
                 {
-                    Players p = inputOutputs[i].GameInputs.Player;
-                    var avaialableMoves = inputOutputs[i].GameInputs.CurrentState.AvailableMoves(p);
-                    double[] outputs = new double[inputOutputs[i].GameInputs.CurrentState.TotalAmountOfMoves];
+                    Players p = inputOutputs[i].InputOutputPair.GameInputs.Player;
+                    var avaialableMoves = inputOutputs[i].InputOutputPair.GameInputs.CurrentState.AvailableMoves(p);
+                    double[] outputs = new double[inputOutputs[i].InputOutputPair.GameInputs.CurrentState.TotalAmountOfMoves];
                     for (int j = 0; j < outputs.Length; j++)
                     {
                         if (p == Players.YouOrFirst)
@@ -252,20 +344,20 @@ namespace NeuralNetTreeStuffViewer
                     }
                     foreach (var m in avaialableMoves)
                     {
-                        var state = inputOutputs[i].GameInputs.CurrentState.Copy();
+                        var state = inputOutputs[i].InputOutputPair.GameInputs.CurrentState.Copy();
                         state.MakeMove(new GameMove<T1>(m.Value, p));
                         double[] inputs = state.GetInputs(Funcs.OppositePlayer(p));
 
                         double[] output = backPropV.Net.Compute(inputs);
                         outputs[m.Key] = output[0];
                     }
-                    inputOutputs[i] = new InputOutputPair<T, T1>(inputOutputs[i].GameInputs, inputOutputs[i].Output, outputs);
-                    debugInputOutputs[i] = new InputOutputDebugInfo(debugInputOutputs[i].BoardInfo, debugInputOutputs[i].Output, outputs, debugInputOutputs[i].Player);
+                    inputOutputs[i] = new InputOutput<T, T1>(new InputOutputPair<T, T1>(inputOutputs[i].InputOutputPair.GameInputs, inputOutputs[i].InputOutputPair.Output, outputs, inputOutputs[i].InputOutputPair.Depth),
+                                                             new InputOutputDebugInfo(inputOutputs[i].DebugInputOutput.BoardInfo, inputOutputs[i].DebugInputOutput.Output, outputs, inputOutputs[i].DebugInputOutput.Player));
                 }
             }
         }
 
-        public void GetTrainingInputs(ITurnBasedGame<T, T1> game, int amountOfSims, int maxDepth, ChooseMoveEvaluators chooseMoveEvaluator, Players startPlayer = Players.YouOrFirst)
+        public void GetTrainingInputs(ITurnBasedGame<T, T1> game, int amountOfSims, int maxDepth, ChooseMoveEvaluators chooseMoveEvaluator, bool removeDraws, Players startPlayer = Players.YouOrFirst)
         {
             if (inputOutputs.Count == 0)
             {
@@ -284,14 +376,16 @@ namespace NeuralNetTreeStuffViewer
                 }
                 MonteCarloTree<T, T1> tree = new MonteCarloTree<T, T1>(game, MonteCarloTree<T, T1>.UTCSelection, Math.Sqrt(2), chooseMoveFunc, maxDepth, startPlayer);
                 HashSet<MonteCarloNode<T, T1>> nodes = new HashSet<MonteCarloNode<T, T1>>();
-                tree.RunMonteCarloSims(amountOfSims, true, tree.Root, nodes);
+                tree.RunMonteCarloSims(amountOfSims, true, true, true, tree.Root, nodes);
                 foreach (var n in nodes)
                 {
-                    var player = n.Player;
-                    var newInput = new InputOutputPair<T, T1>(new GameInputs<T, T1>(n.CurrentState.GetInputs(player), (T)n.CurrentState, player), null, null);
-                    inputOutputs.Add(newInput);
-
-                    debugInputOutputs.Add(new InputOutputDebugInfo(newInput.GameInputs.GetBoardInfo(), newInput.Output, null, newInput.GameInputs.Player));
+                    if (!removeDraws || n.GameInfo.Player1Wins + n.GameInfo.Player2Wins != 0)
+                    {
+                        var player = n.Player;
+                        var newInput = new InputOutputPair<T, T1>(new GameInputs<T, T1>(n.CurrentState.GetInputs(player), (T)n.CurrentState, player), null, null, n.Depth);
+                        var newDebug = new InputOutputDebugInfo(newInput.GameInputs.GetBoardInfo(), newInput.Output, null, newInput.GameInputs.Player);
+                        inputOutputs.Add(new InputOutput<T, T1>(newInput, newDebug));
+                    }
                 }
             }
         }
@@ -312,22 +406,21 @@ namespace NeuralNetTreeStuffViewer
             for (int i = 0; i < inputOutputs.Count; i++)
             {
                 var test = inputOutputs[i];
-                if (inputOutputs[i].Output == null)
+                if (inputOutputs[i].InputOutputPair.Output == null)
                 {
-                    var v = evaluator.EvaluateCurrentStateAndGetMove(inputOutputs[i].GameInputs.CurrentState, inputOutputs[i].GameInputs.Player);
+                    var v = evaluator.EvaluateCurrentStateAndGetMove(inputOutputs[i].InputOutputPair.GameInputs.CurrentState, inputOutputs[i].InputOutputPair.GameInputs.Player);
                     if (v.moveKey == null)
                     {
                         inputOutputs.RemoveAt(i);
-                        debugInputOutputs.RemoveAt(i);
                         i--;
                         continue;
                     }
-                    double[] outputs = new double[inputOutputs[i].GameInputs.CurrentState.TotalAmountOfMoves + 1];
+                    double[] outputs = new double[inputOutputs[i].InputOutputPair.GameInputs.CurrentState.TotalAmountOfMoves + 1];
                     outputs[0] = v.value;
                     outputs[v.moveKey.Value + 1] = 1;
 
-                    inputOutputs[i] = new InputOutputPair<T, T1>(inputOutputs[i].GameInputs, outputs, null);
-                    debugInputOutputs[i] = new InputOutputDebugInfo(debugInputOutputs[i].BoardInfo, outputs, null, debugInputOutputs[i].Player);
+                    inputOutputs[i] = new InputOutput<T, T1>(new InputOutputPair<T, T1>(inputOutputs[i].InputOutputPair.GameInputs, outputs, null, inputOutputs[i].InputOutputPair.Depth),
+                                                             new InputOutputDebugInfo(inputOutputs[i].DebugInputOutput.BoardInfo, outputs, null, inputOutputs[i].DebugInputOutput.Player));
                     if (count > 0 && count % storeAmount == 0)
                     {
                         Console.WriteLine(inputOutputs.Count - i - 1);
@@ -335,16 +428,12 @@ namespace NeuralNetTreeStuffViewer
                         {
                             StoreInputOutputs(path);
                         }
-                        if (debugPath != null)
-                        {
-                            StoreDebugInputOutputs(debugPath);
-                        }
                     }
                     count++;
                 }
             }
         }
-        
+
         public (int key, ITurnBasedGame<T, T1> newBoardState) NetChooseMoveWithWeightedValue(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
         {
             if (avaialableMoves.Count == 0)
@@ -406,8 +495,10 @@ namespace NeuralNetTreeStuffViewer
             return (closestKey, createdStates[closestKey]);
         }
 
+        int amount = 0;
         public (int key, ITurnBasedGame<T, T1> newBoardState) NetChooseMoveWithValue(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
         {
+            amount++;
             if (avaialableMoves.Count == 1)
             {
                 foreach (var m in avaialableMoves)
@@ -484,20 +575,20 @@ namespace NeuralNetTreeStuffViewer
                 maxMove = double.MaxValue;
             }
             Dictionary<int, T1> randAvaialableMoves;
-            if(avaialableMoves.Count <=amountOfRandomValues)
+            if (avaialableMoves.Count <= amountOfRandomValues)
             {
                 randAvaialableMoves = avaialableMoves;
             }
             else
             {
                 randAvaialableMoves = new Dictionary<int, T1>(amountOfRandomValues);
-                for(int i = 0; i < amountOfRandomValues; i++)
+                for (int i = 0; i < amountOfRandomValues; i++)
                 {
                     var key = avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;
                     randAvaialableMoves.Add(key, avaialableMoves[key]);
                     avaialableMoves.Remove(key);
                 }
-                foreach(var m in randAvaialableMoves)
+                foreach (var m in randAvaialableMoves)
                 {
                     avaialableMoves.Add(m.Key, m.Value);
                 }
@@ -519,6 +610,7 @@ namespace NeuralNetTreeStuffViewer
             }
             return (index, newStates[index]);
         }
+
         public static (int key, ITurnBasedGame<T, T1> newBoardState) RandomChooseMove(ITurnBasedGame<T, T1> game, Dictionary<int, T1> avaialableMoves, Players player)
         {
             var val = avaialableMoves.ElementAt(Funcs.Random.Next(0, avaialableMoves.Count)).Key;
@@ -530,7 +622,6 @@ namespace NeuralNetTreeStuffViewer
             double[] input = game.GetInputs(player);
             return backPropV.Net.Compute(input)[0];
         }
-
         public static bool Better(double current, double value, Players player)
         {
             if (player == Players.YouOrFirst)
@@ -554,7 +645,18 @@ namespace NeuralNetTreeStuffViewer
                 throw new NullReferenceException();
             }
         }
-        
+        bool stop = false;
+        public void Stop()
+        {
+            stop = true;
+            for (int i = 0; i < currentEvaluators.Length; i++)
+            {
+                if (currentEvaluators[i] != null)
+                {
+                    currentEvaluators[i].Stop(true);
+                }
+            }
+        }
     }
     public enum ChooseMoveEvaluators
     {
@@ -562,21 +664,32 @@ namespace NeuralNetTreeStuffViewer
         NeuarlNet,
         WeightedNeualNet
     }
-    public struct InputOutputPair<T, T1> where T : ITurnBasedGame<T, T1>
+    public class InputOutput<T,T1> where T : ITurnBasedGame<T, T1>, new()
+    {
+        public InputOutputPair<T,T1> InputOutputPair { get; set; }
+        public InputOutputDebugInfo DebugInputOutput { get; set; }
+        public InputOutput(InputOutputPair<T, T1> inputOutputPair, InputOutputDebugInfo debugInputOutput)
+        {
+            InputOutputPair = inputOutputPair;
+            DebugInputOutput = debugInputOutput;
+        }
+    }
+    public struct InputOutputPair<T, T1> where T : ITurnBasedGame<T, T1>, new()
     {
         public GameInputs<T, T1> GameInputs { get; set; }
         public double[] Output { get; set; }
         public double[] PolicyOutput { get; set; }
+        public int Depth { get; set; }
 
-
-        public InputOutputPair(GameInputs<T, T1> gameInputs, double[] output, double[] policyOutput)
+        public InputOutputPair(GameInputs<T, T1> gameInputs, double[] output, double[] policyOutput, int depth)
         {
             GameInputs = gameInputs;
             Output = output;
             PolicyOutput = policyOutput;
+            Depth = depth;
         }
     }
-    public struct GameInputs<T, T1> where T : ITurnBasedGame<T, T1>
+    public struct GameInputs<T, T1> where T : ITurnBasedGame<T, T1>,new()
     {
         public double[] Inputs { get; set; }
         public T CurrentState { get; set; }

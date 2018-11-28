@@ -22,6 +22,7 @@ namespace NeuralNetTreeStuffViewer
         {
             Copy(game, this);
         }
+        public TickTacToe() : this(3) { }
         public TickTacToe(int boardSize)
         {
             this.boardSize = boardSize;
@@ -375,6 +376,10 @@ namespace NeuralNetTreeStuffViewer
                 return true;
             }
             return false;
+        }
+        ITurnBasedGame ITurnBasedGame.Copy()
+        {
+            return Copy();
         }
     }
 }

@@ -1277,6 +1277,10 @@ namespace NeuralNetTreeStuffViewer
             }
             return str;
         }
+        ITurnBasedGame ITurnBasedGame.Copy()
+        {
+            return Copy();
+        }
     }
 
     public class ChessPiece

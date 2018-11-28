@@ -41,6 +41,7 @@
             this.openFileDialog3 = new System.Windows.Forms.OpenFileDialog();
             this.indexUpDown = new System.Windows.Forms.NumericUpDown();
             this.DebugLabel = new System.Windows.Forms.Label();
+            this.pieceCountLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.indexUpDown)).BeginInit();
             this.SuspendLayout();
             // 
@@ -73,7 +74,7 @@
             // 
             this.boardPanel.Location = new System.Drawing.Point(145, 12);
             this.boardPanel.Name = "boardPanel";
-            this.boardPanel.Size = new System.Drawing.Size(329, 332);
+            this.boardPanel.Size = new System.Drawing.Size(329, 303);
             this.boardPanel.TabIndex = 3;
             // 
             // openFileDialog1
@@ -156,11 +157,20 @@
             this.DebugLabel.Size = new System.Drawing.Size(0, 13);
             this.DebugLabel.TabIndex = 12;
             // 
+            // pieceCountLabel
+            // 
+            this.pieceCountLabel.AutoSize = true;
+            this.pieceCountLabel.Location = new System.Drawing.Point(149, 377);
+            this.pieceCountLabel.Name = "pieceCountLabel";
+            this.pieceCountLabel.Size = new System.Drawing.Size(0, 13);
+            this.pieceCountLabel.TabIndex = 13;
+            // 
             // currentIndexTxtBox
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1213, 736);
+            this.Controls.Add(this.pieceCountLabel);
             this.Controls.Add(this.DebugLabel);
             this.Controls.Add(this.indexUpDown);
             this.Controls.Add(this.openDebugInOut);
@@ -195,6 +205,7 @@
         private System.Windows.Forms.OpenFileDialog openFileDialog3;
         private System.Windows.Forms.NumericUpDown indexUpDown;
         private System.Windows.Forms.Label DebugLabel;
+        private System.Windows.Forms.Label pieceCountLabel;
     }
 }
 

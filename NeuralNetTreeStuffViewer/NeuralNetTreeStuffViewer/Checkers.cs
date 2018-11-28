@@ -809,6 +809,11 @@ namespace NeuralNetTreeStuffViewer
             }
             return false;
         }
+
+        ITurnBasedGame ITurnBasedGame.Copy()
+        {
+            return Copy();
+        }
     }
     public class CheckersPiece
     {

@@ -7,9 +7,10 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public class MonteCarloTree<T, T1> where T : ITurnBasedGame<T, T1>
+    public class MonteCarloTree<T, T1> where T : ITurnBasedGame<T, T1>,new()
         where T1 : struct
     {
+        public bool Stop = false;
         //List<MonteCarloNode<T, T1>> allNodes;
         public MonteCarloNode<T, T1> Root { get; private set; }
         Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction;
@@ -27,7 +28,7 @@ namespace NeuralNetTreeStuffViewer
             //allNodes = new List<MonteCarloNode<T, T1>>();
             //allNodes.Add(Root);
         }
-        public void RunMonteCarloSims(int amountOfSims, bool checkForLoops, MonteCarloNode<T, T1> startNode = null, HashSet<MonteCarloNode<T, T1>> nodesSet = null)
+        public void RunMonteCarloSims(int amountOfSims, bool checkForLoops, bool bothPerspectives, bool firstPerspective, MonteCarloNode<T, T1> startNode = null, HashSet<MonteCarloNode<T, T1>> nodesSet = null)
         {
             if (startNode == null)
             {
@@ -37,12 +38,18 @@ namespace NeuralNetTreeStuffViewer
             {
                 nodesSet.Add(Root);
             }
-            bool player1Perspective = true;
+            bool player1Perspective = firstPerspective;
             for (int i = 0; i < amountOfSims; i++)
             {
                 RunMonteCarloSim(startNode, player1Perspective, nodesSet, checkForLoops);
-                
-                player1Perspective = !player1Perspective;
+                if(Stop)
+                {
+                    return;
+                }
+                if (bothPerspectives)
+                {
+                    player1Perspective = !player1Perspective;
+                }
             }
         }
         
@@ -57,13 +64,16 @@ namespace NeuralNetTreeStuffViewer
                 if (contInfo.continueWithNode && newNode.AvailableMoves.Count > 0 && !newNode.FullyExplored)
                 {
                     var info = SimulationAndPartialBackprop(newNode, player1Perspective, nodesSet, checkForLoops);
-                    Backprop(newNode, info);
+                    if (info.AmountOfGames > 0)
+                    {
+                        Backprop(newNode, info);
+                    }
                 }
                 else
                 {
                     if (newNode != null)
                     {
-                        var info = GetGameInfo(contInfo.boardState, player1Perspective);
+                        var info = GetGameInfo(contInfo.boardState, player1Perspective, newNode.Depth);
                         newNode.GameInfo += info;
                         Backprop(newNode, info);
                     }
@@ -73,7 +83,7 @@ namespace NeuralNetTreeStuffViewer
             {
                 if (newNode != null)
                 {
-                    var info = GetGameInfo(contInfo.boardState, player1Perspective);
+                    var info = GetGameInfo(contInfo.boardState, player1Perspective, newNode.Depth);
                     newNode.GameInfo += info;
                     Backprop(newNode, info);
                 }
@@ -117,7 +127,7 @@ namespace NeuralNetTreeStuffViewer
                     {
                         node.FullyExplored = true;
                         node.AvailableMoves.Clear();
-                        Backprop(node, new NodeGameInfo(0, 0, 0, 0));
+                        Backprop(node, new NodeGameInfo(0, 0, 0, 0, 0,0));
                     }
                     return null;
                 }
@@ -161,7 +171,7 @@ namespace NeuralNetTreeStuffViewer
                         {
                             node.FullyExplored = true;
                         }
-                        var info = GetGameInfo(childBoardState, player1Perspective);
+                        var info = GetGameInfo(childBoardState, player1Perspective, child.Depth);
                         node.GameInfo += info;
                         child.GameInfo += info;
                         Backprop(node, info);
@@ -180,12 +190,16 @@ namespace NeuralNetTreeStuffViewer
             if (!node.FullyExplored)
             {
                 node.FullyExplored = true;
-                Backprop(node, new NodeGameInfo(0, 0, 0, 0));
+                Backprop(node, new NodeGameInfo(0, 0, 0, 0,0,0));
             }
             return null;
         }
         private NodeGameInfo SimulationAndPartialBackprop(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet, bool checkForLoops)
         {
+            if(Stop)
+            {
+                return new NodeGameInfo(0, 0, 0, 0, 0,0);
+            }
             Players player = node.Player;
             if (node.AvailableMoves.Count > 0)
             {
@@ -222,6 +236,10 @@ namespace NeuralNetTreeStuffViewer
                     if (node.Parent == null || !checkForLoops || !IsLoop(child, node.Parent))
                     {
                         NodeGameInfo childGameInfo = SimulationAndPartialBackprop(child, player1Perspective, nodesSet, checkForLoops);
+                        if(Stop)
+                        {
+                            return childGameInfo;
+                        }
                         node.GameInfo += childGameInfo;
                         if (child.FullyExplored)
                         {
@@ -245,7 +263,7 @@ namespace NeuralNetTreeStuffViewer
                     node.FullyExplored = true;
                 }
 
-                var info = GetGameInfo(boardState, player1Perspective);
+                var info = GetGameInfo(boardState, player1Perspective, child.Depth);
                 node.GameInfo += info;
                 child.GameInfo += info;
                 return info;
@@ -255,7 +273,7 @@ namespace NeuralNetTreeStuffViewer
                 node.EndOfGame = true;
                 node.FullyExplored = true;
                 
-                var info = GetGameInfo(BoardState.Continue, player1Perspective);
+                var info = GetGameInfo(BoardState.Continue, player1Perspective, node.Depth);
                 node.GameInfo += info;
                 if (node.Parent != null)
                 {
@@ -287,18 +305,20 @@ namespace NeuralNetTreeStuffViewer
             return IsLoop(node, currentNode.Parent.Parent);
         }
 
-        private NodeGameInfo GetGameInfo(BoardState boardState, bool player1Perspective)
+        private NodeGameInfo GetGameInfo(BoardState boardState, bool player1Perspective, int depth)
         {
-            NodeGameInfo info = new NodeGameInfo(0, 0, 0, 0);
+            NodeGameInfo info = new NodeGameInfo(0, 0, 0, 0,0,0);
             if (boardState != BoardState.IllegalMove)
             {
                 if (player1Perspective)
                 {
                     info.Player1AmountOfGames = 1;
+                    info.Player1TotalDepth = depth;
                 }
                 else
                 {
                     info.Player2AmountOfGames = 1;
+                    info.Player2TotalDepth = depth;
                 }
                 if (boardState == BoardState.Win)
                 {

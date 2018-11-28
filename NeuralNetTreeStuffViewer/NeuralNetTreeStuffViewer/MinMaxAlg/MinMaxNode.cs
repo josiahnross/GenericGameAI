@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer.MinMaxAlg
 {
-    public class MinMaxNode<T, T1>
+    public class MinMaxNode<T, T1> where T : new()
     {
         public IEvaluateableTurnBasedGame<T, T1> CurrentState { get; private set; }
         public bool MaxTurn { get; private set; }

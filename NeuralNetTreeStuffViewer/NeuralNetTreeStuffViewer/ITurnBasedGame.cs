@@ -7,7 +7,19 @@ using System.Windows.Forms;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public interface ITurnBasedGame<TSelf, TMove>
+    public interface ITurnBasedGame
+    {
+        void DisplayGame(Panel panel);
+        void EnableDisplay(bool enable);
+        int TotalAmountOfMoves { get; }
+        double[] GetInputs(Players currentPlayer);
+        void InitializeStaticVariables();
+        void DeserializeInit();
+        ITurnBasedGame Copy();
+        BoardState CheckBoardState(Players currentPlayer, bool justCheckedAvilableMoves);
+    }
+    public interface ITurnBasedGame<TSelf, TMove> : ITurnBasedGame
+        where TSelf : new()
     {
         TSelf Game { get; }
         TSelf Copy();
@@ -20,20 +32,11 @@ namespace NeuralNetTreeStuffViewer
         void MakeMove(GameMove<TMove> move);
 
         BoardState CheckBoardState(GameMove<TMove> lastMove, bool justCheckedAvilableMoves);
-        BoardState CheckBoardState(Players currentPlayer, bool justCheckedAvilableMoves);
-
         Dictionary<int, TMove> AvailableMoves(Players player);
-
-        void DisplayGame(Panel panel);
-        void EnableDisplay(bool enable);
         void ComputerMakeMove(TMove move);
         int GetMoveUniqueIdentifier(TMove move);
         event EventHandler<GameButtonArgs<(GameMove<TMove> move, bool done)>> MoveMade;
-        double[] GetInputs(Players currentPlayer);
-        void InitializeStaticVariables();
-        void DeserializeInit();
         bool BoardEquals(ITurnBasedGame<TSelf, TMove> other);
-        int TotalAmountOfMoves { get; }
     }
     public struct BoardInfo
     {
