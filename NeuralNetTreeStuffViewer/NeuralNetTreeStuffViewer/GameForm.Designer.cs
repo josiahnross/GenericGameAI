@@ -29,31 +29,45 @@
         private void InitializeComponent()
         {
             this.gamePanel = new System.Windows.Forms.Panel();
-            this.button1 = new System.Windows.Forms.Button();
+            this.backButton = new System.Windows.Forms.Button();
+            this.restartButton = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // gamePanel
             // 
-            this.gamePanel.Location = new System.Drawing.Point(0, 30);
+            this.gamePanel.Location = new System.Drawing.Point(73, 1);
             this.gamePanel.Name = "gamePanel";
-            this.gamePanel.Size = new System.Drawing.Size(784, 811);
+            this.gamePanel.Size = new System.Drawing.Size(826, 808);
             this.gamePanel.TabIndex = 1;
             // 
-            // button1
+            // backButton
             // 
-            this.button1.Location = new System.Drawing.Point(0, 1);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(75, 23);
-            this.button1.TabIndex = 2;
-            this.button1.Text = "button1";
-            this.button1.UseVisualStyleBackColor = true;
+            this.backButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.backButton.Location = new System.Drawing.Point(3, 1);
+            this.backButton.Name = "backButton";
+            this.backButton.Size = new System.Drawing.Size(64, 115);
+            this.backButton.TabIndex = 2;
+            this.backButton.Text = "<";
+            this.backButton.UseVisualStyleBackColor = true;
+            this.backButton.Click += new System.EventHandler(this.backButton_Click);
+            // 
+            // restartButton
+            // 
+            this.restartButton.Location = new System.Drawing.Point(3, 122);
+            this.restartButton.Name = "restartButton";
+            this.restartButton.Size = new System.Drawing.Size(64, 109);
+            this.restartButton.TabIndex = 3;
+            this.restartButton.Text = "Restart";
+            this.restartButton.UseVisualStyleBackColor = true;
+            this.restartButton.Click += new System.EventHandler(this.restartButton_Click);
             // 
             // GameForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(784, 811);
-            this.Controls.Add(this.button1);
+            this.ClientSize = new System.Drawing.Size(899, 811);
+            this.Controls.Add(this.restartButton);
+            this.Controls.Add(this.backButton);
             this.Controls.Add(this.gamePanel);
             this.Name = "GameForm";
             this.Text = "GameForm";
@@ -65,6 +79,7 @@
         #endregion
 
         private System.Windows.Forms.Panel gamePanel;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button backButton;
+        private System.Windows.Forms.Button restartButton;
     }
 }

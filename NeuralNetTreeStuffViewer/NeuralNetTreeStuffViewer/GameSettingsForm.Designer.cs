@@ -32,6 +32,7 @@
             this.continueButton = new System.Windows.Forms.Button();
             this.numericUpDown1 = new System.Windows.Forms.NumericUpDown();
             this.label1 = new System.Windows.Forms.Label();
+            this.backButton = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -40,7 +41,7 @@
             this.userPlaysFirstCheckBox.AutoSize = true;
             this.userPlaysFirstCheckBox.Checked = true;
             this.userPlaysFirstCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.userPlaysFirstCheckBox.Location = new System.Drawing.Point(13, 13);
+            this.userPlaysFirstCheckBox.Location = new System.Drawing.Point(98, 15);
             this.userPlaysFirstCheckBox.Name = "userPlaysFirstCheckBox";
             this.userPlaysFirstCheckBox.Size = new System.Drawing.Size(98, 17);
             this.userPlaysFirstCheckBox.TabIndex = 0;
@@ -49,9 +50,9 @@
             // 
             // continueButton
             // 
-            this.continueButton.Location = new System.Drawing.Point(153, 13);
+            this.continueButton.Location = new System.Drawing.Point(202, 15);
             this.continueButton.Name = "continueButton";
-            this.continueButton.Size = new System.Drawing.Size(111, 43);
+            this.continueButton.Size = new System.Drawing.Size(111, 44);
             this.continueButton.TabIndex = 1;
             this.continueButton.Text = "Continue";
             this.continueButton.UseVisualStyleBackColor = true;
@@ -79,11 +80,23 @@
             this.label1.TabIndex = 3;
             this.label1.Text = "Minimax Depth:";
             // 
+            // backButton
+            // 
+            this.backButton.Font = new System.Drawing.Font("Microsoft Sans Serif", 9.75F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.backButton.Location = new System.Drawing.Point(12, 9);
+            this.backButton.Name = "backButton";
+            this.backButton.Size = new System.Drawing.Size(75, 23);
+            this.backButton.TabIndex = 4;
+            this.backButton.Text = "<";
+            this.backButton.UseVisualStyleBackColor = true;
+            this.backButton.Click += new System.EventHandler(this.backButton_Click);
+            // 
             // GameSettingsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(275, 67);
+            this.ClientSize = new System.Drawing.Size(326, 67);
+            this.Controls.Add(this.backButton);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.numericUpDown1);
             this.Controls.Add(this.continueButton);
@@ -103,5 +116,6 @@
         private System.Windows.Forms.Button continueButton;
         private System.Windows.Forms.NumericUpDown numericUpDown1;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.Button backButton;
     }
 }

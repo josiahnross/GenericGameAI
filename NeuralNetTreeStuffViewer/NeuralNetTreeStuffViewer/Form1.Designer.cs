@@ -34,12 +34,12 @@
             this.label2 = new System.Windows.Forms.Label();
             this.openNetFileButton = new System.Windows.Forms.Button();
             this.loadSettingsButton = new System.Windows.Forms.Button();
-            this.button1 = new System.Windows.Forms.Button();
+            this.openTrainingDataButton = new System.Windows.Forms.Button();
             this.label3 = new System.Windows.Forms.Label();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.trainingDataTextBox = new System.Windows.Forms.TextBox();
             this.playWithNetButton = new System.Windows.Forms.Button();
             this.playWith2PlayerButton = new System.Windows.Forms.Button();
-            this.GenerateData = new System.Windows.Forms.Button();
+            this.generateDataButton = new System.Windows.Forms.Button();
             this.trainNeuralNetButton = new System.Windows.Forms.Button();
             this.openFileDialog1 = new System.Windows.Forms.OpenFileDialog();
             this.openFileDialog2 = new System.Windows.Forms.OpenFileDialog();
@@ -99,14 +99,15 @@
             this.loadSettingsButton.Text = "Load Settings";
             this.loadSettingsButton.UseVisualStyleBackColor = true;
             // 
-            // button1
+            // openTrainingDataButton
             // 
-            this.button1.Location = new System.Drawing.Point(202, 59);
-            this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(137, 21);
-            this.button1.TabIndex = 8;
-            this.button1.Text = "Open Training Data File";
-            this.button1.UseVisualStyleBackColor = true;
+            this.openTrainingDataButton.Location = new System.Drawing.Point(202, 59);
+            this.openTrainingDataButton.Name = "openTrainingDataButton";
+            this.openTrainingDataButton.Size = new System.Drawing.Size(137, 21);
+            this.openTrainingDataButton.TabIndex = 8;
+            this.openTrainingDataButton.Text = "Open Training Data File";
+            this.openTrainingDataButton.UseVisualStyleBackColor = true;
+            this.openTrainingDataButton.Click += new System.EventHandler(this.opneTrainingDataButtonClick_Click);
             // 
             // label3
             // 
@@ -117,12 +118,12 @@
             this.label3.TabIndex = 7;
             this.label3.Text = "Training Data:";
             // 
-            // textBox1
+            // trainingDataTextBox
             // 
-            this.textBox1.Location = new System.Drawing.Point(92, 60);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(104, 20);
-            this.textBox1.TabIndex = 6;
+            this.trainingDataTextBox.Location = new System.Drawing.Point(92, 60);
+            this.trainingDataTextBox.Name = "trainingDataTextBox";
+            this.trainingDataTextBox.Size = new System.Drawing.Size(104, 20);
+            this.trainingDataTextBox.TabIndex = 6;
             // 
             // playWithNetButton
             // 
@@ -144,14 +145,15 @@
             this.playWith2PlayerButton.UseVisualStyleBackColor = true;
             this.playWith2PlayerButton.Click += new System.EventHandler(this.playWith2PlayerButton_Click);
             // 
-            // GenerateData
+            // generateDataButton
             // 
-            this.GenerateData.Location = new System.Drawing.Point(12, 151);
-            this.GenerateData.Name = "GenerateData";
-            this.GenerateData.Size = new System.Drawing.Size(132, 23);
-            this.GenerateData.TabIndex = 12;
-            this.GenerateData.Text = "Generate Training Data";
-            this.GenerateData.UseVisualStyleBackColor = true;
+            this.generateDataButton.Location = new System.Drawing.Point(12, 151);
+            this.generateDataButton.Name = "generateDataButton";
+            this.generateDataButton.Size = new System.Drawing.Size(132, 23);
+            this.generateDataButton.TabIndex = 12;
+            this.generateDataButton.Text = "Generate Training Data";
+            this.generateDataButton.UseVisualStyleBackColor = true;
+            this.generateDataButton.Click += new System.EventHandler(this.generateDataButton_Click);
             // 
             // trainNeuralNetButton
             // 
@@ -172,6 +174,7 @@
             // 
             this.openFileDialog2.FileName = "openFileDialog2";
             this.openFileDialog2.Filter = "Training Data files (*.train)|*.train";
+            this.openFileDialog2.FileOk += new System.ComponentModel.CancelEventHandler(this.openFileDialog2_FileOk);
             // 
             // Form1
             // 
@@ -179,12 +182,12 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(378, 258);
             this.Controls.Add(this.trainNeuralNetButton);
-            this.Controls.Add(this.GenerateData);
+            this.Controls.Add(this.generateDataButton);
             this.Controls.Add(this.playWith2PlayerButton);
             this.Controls.Add(this.playWithNetButton);
-            this.Controls.Add(this.button1);
+            this.Controls.Add(this.openTrainingDataButton);
             this.Controls.Add(this.label3);
-            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.trainingDataTextBox);
             this.Controls.Add(this.loadSettingsButton);
             this.Controls.Add(this.openNetFileButton);
             this.Controls.Add(this.label2);
@@ -207,12 +210,12 @@
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Button openNetFileButton;
         private System.Windows.Forms.Button loadSettingsButton;
-        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button openTrainingDataButton;
         private System.Windows.Forms.Label label3;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox trainingDataTextBox;
         private System.Windows.Forms.Button playWithNetButton;
         private System.Windows.Forms.Button playWith2PlayerButton;
-        private System.Windows.Forms.Button GenerateData;
+        private System.Windows.Forms.Button generateDataButton;
         private System.Windows.Forms.Button trainNeuralNetButton;
         private System.Windows.Forms.OpenFileDialog openFileDialog1;
         private System.Windows.Forms.OpenFileDialog openFileDialog2;

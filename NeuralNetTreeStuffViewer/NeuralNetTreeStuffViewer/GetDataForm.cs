@@ -40,6 +40,9 @@ namespace NeuralNetTreeStuffViewer
             }
         }
 
-
+        private void GetDataForm_Load(object sender, EventArgs e)
+        {
+            NavigationInfo.FormOrder.Push(this);
+        }
     }
 }

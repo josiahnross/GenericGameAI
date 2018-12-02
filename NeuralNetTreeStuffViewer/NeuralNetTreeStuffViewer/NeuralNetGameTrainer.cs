@@ -14,6 +14,7 @@ namespace NeuralNetTreeStuffViewer
 {
     public interface ITrainer
     {
+        bool LoadedFromFile { get; }
         bool Parallel { get; set; }
         bool CurrentlyParallel { get; }
         void LoadNeuralNet(string path);
@@ -23,6 +24,7 @@ namespace NeuralNetTreeStuffViewer
         void StoreInputOutputs(string path);
         void WipeOutputs();
         void Stop();
+        int GetNetInputs();
     }
     public class NeuralNetGameTrainer<T, T1> : ITrainer
         where T : ITurnBasedGame<T, T1>, new()
@@ -30,12 +32,13 @@ namespace NeuralNetTreeStuffViewer
     {
         public bool Parallel { get; set; }
         public bool CurrentlyParallel { get; private set; }
+        public bool LoadedFromFile { get; private set; }
         List<InputOutput<T, T1>> inputOutputs;
         //List<InputOutputDebugInfo> debugInputOutputs;
         Backpropagation backPropV;
         Backpropagation backPropPolicy;
         IEvaluateableTurnBasedGame<T, T1>[] currentEvaluators;
-        public NeuralNetGameTrainer(Backpropagation backProp, Backpropagation backPropPolicy = null, string inputOutputPath = null, string inputOutputDebugPath = null)
+        public NeuralNetGameTrainer(Backpropagation backProp, Backpropagation backPropPolicy = null, string inputOutputPath = null)
         {
             Parallel = true;
             this.backPropV = backProp;
@@ -47,7 +50,16 @@ namespace NeuralNetTreeStuffViewer
             else
             {
                 string data = File.ReadAllText(inputOutputPath);
-                inputOutputs = JsonConvert.DeserializeObject<List<InputOutput<T, T1>>>(data);
+                try
+                {
+                    inputOutputs = JsonConvert.DeserializeObject<List<InputOutput<T, T1>>>(data);
+                }
+                catch
+                {
+                    LoadedFromFile = false;
+                    return;
+                }
+                LoadedFromFile = true;
                 if (inputOutputs.Count > 0)
                 {
                     inputOutputs[0].InputOutputPair.GameInputs.CurrentState.InitializeStaticVariables();
@@ -57,6 +69,14 @@ namespace NeuralNetTreeStuffViewer
                     }
                 }
             }
+        }
+        public int GetNetInputs()
+        {
+            if(inputOutputs.Count <= 0)
+            {
+                return 0;
+            }
+            return inputOutputs[0].InputOutputPair.GameInputs.Inputs.Length;
         }
         public void LoadNeuralNet(string path)
         {
@@ -220,15 +240,14 @@ namespace NeuralNetTreeStuffViewer
                 }
             }
         }
-        public void GetTrainingOutputs(IEvaluateableTurnBasedGame<T, T1> evaluator, int storeAmount = -1, string path = null, string debugPath = null)
+        public void GetTrainingOutputs(IEvaluateableTurnBasedGame<T, T1> evaluator, int writeRemainingAamount = -1, string path = null, int parallelBatchAmount = 100)
         {
             int count = 0;
             int realCount = 0;
-            int parallelBatch = 100;
 
-            for (int j = 0; j < inputOutputs.Count; j += parallelBatch)
+            for (int j = 0; j < inputOutputs.Count; j += parallelBatchAmount)
             {
-                int amount = Math.Min(parallelBatch, inputOutputs.Count - j);
+                int amount = Math.Min(parallelBatchAmount, inputOutputs.Count - j);
                 currentEvaluators = new IEvaluateableTurnBasedGame<T, T1>[amount];
                 bool parallelChange = false;
                 if (Parallel)
@@ -236,7 +255,7 @@ namespace NeuralNetTreeStuffViewer
                     CurrentlyParallel = true;
                     System.Threading.Tasks.Parallel.For(0, amount, (i, state) =>
                     {
-                        if (InsideLoop(i, j, true, evaluator, ref count, ref realCount, storeAmount))
+                        if (InsideLoop(i, j, true, evaluator, ref count, ref realCount, writeRemainingAamount))
                         {
                             state.Break();
                         }
@@ -248,7 +267,7 @@ namespace NeuralNetTreeStuffViewer
                     CurrentlyParallel = false;
                     for (int i = 0; i < amount; i++)
                     {
-                        InsideLoop(i, j, false, evaluator, ref count, ref realCount, storeAmount);
+                        InsideLoop(i, j, false, evaluator, ref count, ref realCount, writeRemainingAamount);
                         if (Parallel)
                         {
                             break;
@@ -266,13 +285,13 @@ namespace NeuralNetTreeStuffViewer
                 }
                 if (parallelChange)
                 {
-                    j -= parallelBatch;
+                    j -= parallelBatchAmount;
                     continue;
                 }
             }
 
         }
-        bool InsideLoop(int i, int j, bool inParallel, IEvaluateableTurnBasedGame<T, T1> evaluator, ref int count, ref int realCount, int storeAmount)
+        bool InsideLoop(int i, int j, bool inParallel, IEvaluateableTurnBasedGame<T, T1> evaluator, ref int count, ref int realCount, int writeRemainingAamount)
         {
             if ((inParallel && !Parallel) || (!inParallel && Parallel))
             {
@@ -292,7 +311,7 @@ namespace NeuralNetTreeStuffViewer
                     inputOutputs[index].DebugInputOutput = info.Item2;
                     var currentCount = Interlocked.Increment(ref count);
                     Interlocked.Increment(ref realCount);
-                    if (currentCount % storeAmount == 0)
+                    if (currentCount % writeRemainingAamount == 0)
                     {
                         var output = info.Item1.Output[0];
                         Console.WriteLine(inputOutputs.Count - currentCount + " Output: " + output);
@@ -658,12 +677,14 @@ namespace NeuralNetTreeStuffViewer
             }
         }
     }
+
     public enum ChooseMoveEvaluators
     {
         Random,
         NeuarlNet,
         WeightedNeualNet
     }
+    
     public class InputOutput<T,T1> where T : ITurnBasedGame<T, T1>, new()
     {
         public InputOutputPair<T,T1> InputOutputPair { get; set; }

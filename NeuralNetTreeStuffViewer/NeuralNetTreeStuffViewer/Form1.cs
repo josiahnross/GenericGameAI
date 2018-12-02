@@ -18,7 +18,7 @@ namespace NeuralNetTreeStuffViewer
 {
     public partial class Form1 : Form
     {
-        Dictionary<string, (ITurnBasedGame, int[], Type)> namesOfGames;
+        Dictionary<string, (ITurnBasedGame game, int[] layers, Type interfaceType, Type trainerType)> namesOfGames;
         public Form1()
         {
             InitializeComponent();
@@ -41,12 +41,17 @@ namespace NeuralNetTreeStuffViewer
         }
         private async void Form1_Load(object sender, EventArgs e)
         {
+            NavigationInfo.FormOrder.Push(this);
             Funcs.Random = new Random(4);
-            namesOfGames = new Dictionary<string, (ITurnBasedGame, int[],Type)>();
-            namesOfGames.Add("Tick Tac Toe", (new TickTacToe(), new int[] { 19, 5, 3, 1 }, typeof(MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>)));
-            namesOfGames.Add("Connect Four", (new ConnectFour(), new int[] { 85, 50, 25, 10, 1 }, typeof(MinMaxTurnBasedGameInterface<ConnectFour, int>)));
-            namesOfGames.Add("Checkers", (new Checkers(), new int[] { 97, 60, 35, 20, 10, 5, 1 }, typeof(MinMaxTurnBasedGameInterface<Checkers, CheckersMove>)));
-            namesOfGames.Add("Chess", (new Chess(), new int[] { 321, 250, 100, 50, 30, 20, 10, 1 }, typeof(MinMaxTurnBasedGameInterface<Chess, ChessMove>)));
+            namesOfGames = new Dictionary<string, (ITurnBasedGame, int[], Type, Type)>();
+            namesOfGames.Add("Tick Tac Toe", (new TickTacToe(), new int[] { 19, 5, 3, 1 },
+                typeof(MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>), typeof(NeuralNetGameTrainer<TickTacToe, BoardPosition>)));
+            namesOfGames.Add("Connect Four", (new ConnectFour(), new int[] { 85, 50, 25, 10, 1 },
+                typeof(MinMaxTurnBasedGameInterface<ConnectFour, int>), typeof(NeuralNetGameTrainer<ConnectFour, int>)));
+            namesOfGames.Add("Checkers", (new Checkers(), new int[] { 97, 60, 35, 20, 10, 5, 1 },
+                typeof(MinMaxTurnBasedGameInterface<Checkers, CheckersMove>), typeof(NeuralNetGameTrainer<Checkers, CheckersMove>)));
+            namesOfGames.Add("Chess", (new Chess(), new int[] { 321, 250, 100, 50, 30, 20, 10, 1 },
+                typeof(MinMaxTurnBasedGameInterface<Chess, ChessMove>), typeof(NeuralNetGameTrainer<Chess, ChessMove>)));
             foreach (var g in namesOfGames)
             {
                 gamesComboBox.Items.Add(g.Key);
@@ -104,12 +109,11 @@ namespace NeuralNetTreeStuffViewer
                 int maxDepth = 100;
 
                 string path = "inputOutputsMinMax4.txt";
-                string debugPath = "debugInputOutputsMinMax4.txt";
                 NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 60, 35, 20, 10, 5, 1);
                 Backpropagation backProp = new Backpropagation(net);
                 NeuralNetwork policyNet = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 100, 150, 200, Checkers.StatocTotalAmountOfMoves);
                 Backpropagation policyBackProp = new Backpropagation(policyNet, PolicyError);
-                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(backProp, policyBackProp, path, debugPath);
+                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(backProp, policyBackProp, path);
 
                 var monteCarloEvaluator = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
                  Math.Sqrt(2), trainer.NetChooseMoveWithValue, 0, 8, new Checkers(), maxDepth, true);//trainer.NetChooseMove
@@ -121,7 +125,7 @@ namespace NeuralNetTreeStuffViewer
                 //{
                 trainer.LoadNeuralNet(netPath);
                 trainer.GetTrainingInputs(new Checkers(), 50, maxDepth, ChooseMoveEvaluators.WeightedNeualNet, false);
-                trainer.GetTrainingOutputs(minMaxEvaluator, 40, path, debugPath);
+                trainer.GetTrainingOutputs(minMaxEvaluator, 40, path);
                 trainer.PruneInputOutputs(maxOut);
                 //trainer.GetPolicyOutputs(0, path, debugPath);
                 trainer.StoreInputOutputs(path);
@@ -147,7 +151,7 @@ namespace NeuralNetTreeStuffViewer
                 Checkers temp = new Checkers();
                 NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 97, 150, 100, 200, temp.TotalAmountOfMoves + 1);
                 Backpropagation backProp = new Backpropagation(net, FirstIndexAverageError);
-                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(backProp, null, path, debugPath);
+                NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(backProp, null, path);
 
                 if (false)
                 {
@@ -248,10 +252,9 @@ namespace NeuralNetTreeStuffViewer
 
                 netPath = "chessGen2NetV2.net";
                 string path = "chessInputOutputsMinMax2V2.txt";
-                string debugPath = "chessDebugInputOutputsMinMax2V2.txt";
                 NeuralNetwork net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, 321, 250, 100, 50, 30, 20, 10, 1);
                 Backpropagation backProp = new Backpropagation(net);
-                var chessTrainer = new NeuralNetGameTrainer<Chess, ChessMove>(backProp, null, path, debugPath);
+                var chessTrainer = new NeuralNetGameTrainer<Chess, ChessMove>(backProp, null, path);
                 //iTrainer = chessTrainer;
 
                 var monteCarloEvaluator = new MonteCarloEvaluator<Chess, ChessMove>(MonteCarloTree<Chess, ChessMove>.UTCSelection,
@@ -265,7 +268,7 @@ namespace NeuralNetTreeStuffViewer
                 await Task.Run(() =>
                 {
                     chessTrainer.GetTrainingInputs(new Chess(), 25, maxDepth, ChooseMoveEvaluators.WeightedNeualNet, false);
-                    chessTrainer.GetTrainingOutputs(monteCarloEvaluator, 1, path, debugPath);
+                    chessTrainer.GetTrainingOutputs(monteCarloEvaluator, 1, path);
                     return;
                     chessTrainer.PruneInputOutputs(maxOut);
                     chessTrainer.StoreInputOutputs(path);
@@ -373,46 +376,21 @@ namespace NeuralNetTreeStuffViewer
 
         private void playWithNetButton_Click(object sender, EventArgs e)
         {
-            NavigationInfo.Game = namesOfGames[gamesComboBox.Text].Item1;
+            NavigationInfo.Game = namesOfGames[gamesComboBox.Text].game;
             NavigationInfo.NextForm = new GameForm();
-            if (NavigationInfo.Net == null)
+            if (SetNavigationInfo())
             {
-                if (neuralNetTextBox.Text == "")
-                {
-                    NavigationInfo.Net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, namesOfGames[gamesComboBox.Text].Item2);
-                }
-                else
-                {
-                    NeuralNetwork net = null;
-                    try
-                    {
-                        net = NeuralNetwork.Deserialize(File.ReadAllText(neuralNetTextBox.Text));
-                    }
-                    catch
-                    {
-                        NavigationInfo.Net = null;
-                        playWithNetButton.Enabled = false;
-                        neuralNetTextBox.Text = "";
-                        return;
-                    }
-                    NavigationInfo.Net = net;
-                }
+
+                NavigationInfo.InterfaceWithGenericsType = namesOfGames[gamesComboBox.Text].interfaceType;
+                GameSettingsForm m = new GameSettingsForm();
+                m.Show();
+                Hide();
             }
-            if(NavigationInfo.Net.Layers[0].Neurons.Length != NavigationInfo.Game.GetInputs(Players.YouOrFirst).Length)
-            {
-                NavigationInfo.Net = null;
-                neuralNetTextBox.Text = "";
-                return;
-            }
-            NavigationInfo.InterfaceWithGenericsType = namesOfGames[gamesComboBox.Text].Item3;
-            GameSettingsForm m = new GameSettingsForm();
-            m.Show();
-            Hide();
         }
 
         private void playWith2PlayerButton_Click(object sender, EventArgs e)
         {
-            NavigationInfo.Game = namesOfGames[gamesComboBox.Text].Item1;
+            NavigationInfo.Game = namesOfGames[gamesComboBox.Text].game;
             NavigationInfo.Net = null;
             GameForm m = new GameForm();
             m.Show();
@@ -443,6 +421,86 @@ namespace NeuralNetTreeStuffViewer
 
         private void neuralNetTextBox_TextChanged(object sender, EventArgs e)
         {
+        }
+
+        private void opneTrainingDataButtonClick_Click(object sender, EventArgs e)
+        {
+            openFileDialog2.ShowDialog();
+        }
+
+        private void openFileDialog2_FileOk(object sender, CancelEventArgs e)
+        {
+            string file = openFileDialog2.FileName;
+            trainingDataTextBox.Text = file;
+        }
+
+        private void generateDataButton_Click(object sender, EventArgs e)
+        {
+            NavigationInfo.Game = namesOfGames[gamesComboBox.Text].game;
+            if (SetNavigationInfo())
+            {
+                if (SetTrainer())
+                {
+                    TrainingSettingsForm m = new TrainingSettingsForm();
+                    m.Show();
+                    Hide();
+                }
+
+            }
+        }
+
+        bool SetNavigationInfo()
+        {
+            if (NavigationInfo.Net == null)
+            {
+                if (neuralNetTextBox.Text == "")
+                {
+                    NavigationInfo.Net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, namesOfGames[gamesComboBox.Text].layers);
+                }
+                else
+                {
+                    NeuralNetwork net = null;
+                    try
+                    {
+                        net = NeuralNetwork.Deserialize(File.ReadAllText(neuralNetTextBox.Text));
+                    }
+                    catch
+                    {
+                        NavigationInfo.Net = null;
+                        playWithNetButton.Enabled = false;
+                        neuralNetTextBox.Text = "";
+                        return false;
+                    }
+                    NavigationInfo.Net = net;
+                }
+            }
+            if (NavigationInfo.Net.Layers[0].Neurons.Length != NavigationInfo.Game.GetInputs(Players.YouOrFirst).Length)
+            {
+                NavigationInfo.Net = null;
+                neuralNetTextBox.Text = "";
+                return false;
+            }
+            return true;
+        }
+
+        bool SetTrainer()
+        {
+            ITrainer trainer =
+                        (ITrainer)namesOfGames[gamesComboBox.Text].trainerType.GetConstructor(
+                            new Type[] { typeof(Backpropagation), typeof(Backpropagation), typeof(string) })
+                            .Invoke(new object[] { new Backpropagation(NavigationInfo.Net), null, trainingDataTextBox.Text == "" ? null : trainingDataTextBox.Text });
+            int inputAmount = namesOfGames[gamesComboBox.Text].layers[0];
+            if ((trainer.LoadedFromFile || trainingDataTextBox.Text == "") && trainer.GetNetInputs() == inputAmount)
+            {
+                NavigationInfo.Trainer = trainer;
+                return true;
+            }
+            else
+            {
+                NavigationInfo.Trainer = null;
+                trainingDataTextBox.Text = "";
+                return false;
+            }
         }
     }
     public static class Funcs

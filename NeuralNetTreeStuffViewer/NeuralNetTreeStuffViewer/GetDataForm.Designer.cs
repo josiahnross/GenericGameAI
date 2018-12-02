@@ -62,6 +62,7 @@
             this.Controls.Add(this.runParallelCheckBox);
             this.Name = "GetDataForm";
             this.Text = "GetDataForm";
+            this.Load += new System.EventHandler(this.GetDataForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
