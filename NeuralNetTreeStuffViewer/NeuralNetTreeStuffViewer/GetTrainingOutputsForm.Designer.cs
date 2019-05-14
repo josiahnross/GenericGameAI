@@ -1,6 +1,6 @@
 ﻿namespace NeuralNetTreeStuffViewer
 {
-    partial class GetDataForm
+    partial class GetTrainingOutputsForm
     {
         /// <summary>
         /// Required designer variable.
@@ -53,15 +53,15 @@
             this.saveButton.UseVisualStyleBackColor = true;
             this.saveButton.Click += new System.EventHandler(this.saveButton_Click);
             // 
-            // GetDataForm
+            // GetTrainingOutputsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(278, 110);
+            this.ClientSize = new System.Drawing.Size(120, 52);
             this.Controls.Add(this.saveButton);
             this.Controls.Add(this.runParallelCheckBox);
-            this.Name = "GetDataForm";
-            this.Text = "GetDataForm";
+            this.Name = "GetTrainingOutputsForm";
+            this.Text = "GetTrainingOutputsForm";
             this.Load += new System.EventHandler(this.GetDataForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

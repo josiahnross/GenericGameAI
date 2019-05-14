@@ -6,19 +6,31 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public class MonteCarloNode<T, T1> where T : ITurnBasedGame<T, T1>,new()
+    public interface IMonteCarloNode
+    {
+        NodeGameInfo GameInfo { get; set; }
+        Players Player { get; }
+        bool FullyExplored { get; set; }
+        int TotalAvialableMovesCount { get;  }
+        bool EndOfGame { get; set; }
+        int Depth { get; set; }
+        IMonteCarloNode UnGenParent { get; }
+    }
+    public class MonteCarloNode<T, T1> :IMonteCarloNode
+        where T : ITurnBasedGame<T, T1>,new()
     {
         public NodeGameInfo GameInfo { get; set; }
-        public Dictionary<int, MonteCarloNode<T, T1>> Children { get; }
-        public MonteCarloNode<T, T1> Parent { get; private set; }
-        public ITurnBasedGame<T, T1> CurrentState { get; }
-        public Players Player { get; }
-        public Dictionary<int, T1> AvailableMoves { get; }
+        public Players Player { get; private set; }
         public bool FullyExplored { get; set; }
-        public (int index, T1 move) MoveIndex { get; }
         public int TotalAvialableMovesCount { get; private set; }
         public bool EndOfGame { get; set; }
         public int Depth { get; set; }
+        public IMonteCarloNode UnGenParent { get { return Parent; } }
+        public Dictionary<int, MonteCarloNode<T, T1>> Children { get; }
+        public MonteCarloNode<T, T1> Parent { get; private set; }
+        public ITurnBasedGame<T, T1> CurrentState { get; }
+        public Dictionary<int, T1> AvailableMoves { get; }
+        public (int index, T1 move) MoveIndex { get; }
         public MonteCarloNode(MonteCarloNode<T, T1> parent, ITurnBasedGame<T, T1> currentState, (int index, T1 move) moveIndex, Players player, int depth)
         {
             EndOfGame = false;

@@ -19,14 +19,18 @@ namespace NeuralNetTreeStuffViewer
         public static string DebugInfoPath = "debugInfo.txt";
         public static uint MinMaxDepth = 3;
         public static ITrainer Trainer = null;
-        public static int WriteRemainingDataRate = 1;
-        public static int ParrallelAmount = 100;
-        public static int AmountOfMCTSimulation = 8;
         public static int AmountOfInputMCTSimulation = 30;
         public static ChooseMoveEvaluators InputMCTMoveEvalutator = ChooseMoveEvaluators.WeightedNeualNet;
-        public static ChooseMoveEvaluators OutputMCTMoveEvalutator = ChooseMoveEvaluators.NeuarlNet;
         public static bool InputsRemoveDraws = false;
-        public static int MCTMaxDepth = 100;
-        public static double DepthWieght = 0.002f;
+        public static int InputMCTMaxDepth = 100;
+        public static int AmountOfMCTSimulation = 8;
+        public static ChooseMoveEvaluators OutputMCTMoveEvalutator = ChooseMoveEvaluators.NeuarlNet;
+        public static double DepthWeight = 0.002f;
+        public static int OutputMCTMaxDepth = 100;
+        public static int WriteRemainingDataRate = 1;
+        public static int ParrallelAmount = 100;
+        public static string NameOfGame = null;
+        public static string NetPath = null;
+        public static string TrainingDataPath = null;
     }
 }

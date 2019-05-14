@@ -79,17 +79,17 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
 
         public double[] Compute(double[] input)
         {
-            Layers[0].SetOutputs(input);
+            //Layers[0].SetOutputs(input);
             double[] output = null;
             for (int i = 1; i < Layers.Length; i++)
             {
                 if (i == Layers.Length - 1)
                 {
-                    output = Layers[i].Compute();
+                    output = Layers[i].Compute(input);
                 }
                 else
                 {
-                    Layers[i].Compute();
+                    input = Layers[i].Compute(input);
                 }
             }
             return output;

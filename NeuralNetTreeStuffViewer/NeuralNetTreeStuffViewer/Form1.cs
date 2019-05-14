@@ -18,11 +18,20 @@ namespace NeuralNetTreeStuffViewer
 {
     public partial class Form1 : Form
     {
-        Dictionary<string, (ITurnBasedGame game, int[] layers, Type interfaceType, Type trainerType)> namesOfGames;
+        public static List<ChooseMoveEvaluators> EvaluatorNames;
+        public static Dictionary<string, (ITurnBasedGame game, int[] layers, Type interfaceType, Type trainerType, Type mctEvalType)> namesOfGames;
         public Form1()
         {
             InitializeComponent();
             ActivationFunction.Init();
+            if (EvaluatorNames == null)
+            {
+                EvaluatorNames = new List<ChooseMoveEvaluators>();
+                foreach (var value in Enum.GetValues(typeof(ChooseMoveEvaluators)))
+                {
+                    EvaluatorNames.Add((ChooseMoveEvaluators)value);
+                }
+            }
         }
         MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition> ticTacToeEvaluator;
         MinMaxTurnBasedGameInterface<ConnectFour, int> connectFourEvaluator;
@@ -41,17 +50,24 @@ namespace NeuralNetTreeStuffViewer
         }
         private async void Form1_Load(object sender, EventArgs e)
         {
-            NavigationInfo.FormOrder.Push(this);
             Funcs.Random = new Random(4);
-            namesOfGames = new Dictionary<string, (ITurnBasedGame, int[], Type, Type)>();
-            namesOfGames.Add("Tick Tac Toe", (new TickTacToe(), new int[] { 19, 5, 3, 1 },
-                typeof(MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>), typeof(NeuralNetGameTrainer<TickTacToe, BoardPosition>)));
-            namesOfGames.Add("Connect Four", (new ConnectFour(), new int[] { 85, 50, 25, 10, 1 },
-                typeof(MinMaxTurnBasedGameInterface<ConnectFour, int>), typeof(NeuralNetGameTrainer<ConnectFour, int>)));
-            namesOfGames.Add("Checkers", (new Checkers(), new int[] { 97, 60, 35, 20, 10, 5, 1 },
-                typeof(MinMaxTurnBasedGameInterface<Checkers, CheckersMove>), typeof(NeuralNetGameTrainer<Checkers, CheckersMove>)));
-            namesOfGames.Add("Chess", (new Chess(), new int[] { 321, 250, 100, 50, 30, 20, 10, 1 },
-                typeof(MinMaxTurnBasedGameInterface<Chess, ChessMove>), typeof(NeuralNetGameTrainer<Chess, ChessMove>)));
+            NavigationInfo.FormOrder.Push(this);
+            if (namesOfGames == null)
+            {
+                namesOfGames = new Dictionary<string, (ITurnBasedGame game, int[] layers, Type interfaceType, Type trainerType, Type mctEvalType)>();
+                namesOfGames.Add("Tick Tac Toe", (new TickTacToe(), new int[] { 19, 5, 3, 1 },
+                    typeof(MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>), typeof(NeuralNetGameTrainer<TickTacToe, BoardPosition>),
+                    typeof(MonteCarloEvaluator<TickTacToe, BoardPosition>)));
+                namesOfGames.Add("Connect Four", (new ConnectFour(), new int[] { 85, 50, 25, 10, 1 },
+                    typeof(MinMaxTurnBasedGameInterface<ConnectFour, int>), typeof(NeuralNetGameTrainer<ConnectFour, int>),
+                    typeof(MonteCarloEvaluator<ConnectFour, int>)));
+                namesOfGames.Add("Checkers", (new Checkers(), new int[] { 97, 60, 35, 20, 10, 5, 1 },
+                    typeof(MinMaxTurnBasedGameInterface<Checkers, CheckersMove>), typeof(NeuralNetGameTrainer<Checkers, CheckersMove>),
+                    typeof(MonteCarloEvaluator<Checkers, CheckersMove>)));
+                namesOfGames.Add("Chess", (new Chess(), new int[] { 321, 250, 100, 50, 30, 20, 10, 1 },
+                    typeof(MinMaxTurnBasedGameInterface<Chess, ChessMove>), typeof(NeuralNetGameTrainer<Chess, ChessMove>),
+                    typeof(MonteCarloEvaluator<Chess, ChessMove>)));
+            }
             foreach (var g in namesOfGames)
             {
                 gamesComboBox.Items.Add(g.Key);
@@ -63,14 +79,14 @@ namespace NeuralNetTreeStuffViewer
                 TickTacToe tickTacToe = new TickTacToe(3);
                 //tickTacToe.DisplayGame(gamePanel);
                 ticTacToeEvaluator = new MinMaxTurnBasedGameInterface<TickTacToe, BoardPosition>(new TickTacToe(3), new TickTacToe(3), AIFirst, 9, debugInfoPath);
-                ticTacToeEvaluator.SetEvaluator(new MonteCarloEvaluator<TickTacToe, BoardPosition>(MonteCarloTree<TickTacToe, BoardPosition>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, ticTacToeEvaluator.Game, int.MaxValue, false));
+                ticTacToeEvaluator.SetEvaluator(new MonteCarloEvaluator<TickTacToe, BoardPosition>(MonteCarloTree.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, ticTacToeEvaluator.Game, int.MaxValue, false));
             }
             else if (false)
             {
                 ConnectFour connectFour = new ConnectFour(7, 6);
                 //connectFour.DisplayGame(gamePanel);
                 connectFourEvaluator = new MinMaxTurnBasedGameInterface<ConnectFour, int>(new ConnectFour(7, 6), connectFour, AIFirst, 3, debugInfoPath);
-                connectFourEvaluator.SetEvaluator(new MonteCarloEvaluator<ConnectFour, int>(MonteCarloTree<ConnectFour, int>.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, connectFourEvaluator.Game, int.MaxValue, false));
+                connectFourEvaluator.SetEvaluator(new MonteCarloEvaluator<ConnectFour, int>(MonteCarloTree.UTCSelection, Math.Sqrt(2), RandomMoveSelectionFunc, 50, 100, connectFourEvaluator.Game, int.MaxValue, false));
             }
             else if (false)
             {
@@ -95,7 +111,7 @@ namespace NeuralNetTreeStuffViewer
                 }
                 if (monteCarloEval)
                 {
-                    eval = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
+                    eval = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree.UTCSelection,
                     Math.Sqrt(2), RandomMoveSelectionFunc, 50, 25, checkersEvaluator.Game, int.MaxValue, false);
                 }
                 else
@@ -115,7 +131,7 @@ namespace NeuralNetTreeStuffViewer
                 Backpropagation policyBackProp = new Backpropagation(policyNet, PolicyError);
                 NeuralNetGameTrainer<Checkers, CheckersMove> trainer = new NeuralNetGameTrainer<Checkers, CheckersMove>(backProp, policyBackProp, path);
 
-                var monteCarloEvaluator = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree<Checkers, CheckersMove>.UTCSelection,
+                var monteCarloEvaluator = new MonteCarloEvaluator<Checkers, CheckersMove>(MonteCarloTree.UTCSelection,
                  Math.Sqrt(2), trainer.NetChooseMoveWithValue, 0, 8, new Checkers(), maxDepth, true);//trainer.NetChooseMove
                 MinMaxEvaluator<Checkers, CheckersMove> minMaxEvaluator = new MinMaxEvaluator<Checkers, CheckersMove>(new Checkers(), null, 5, null);
                 IEvaluateableTurnBasedGame<Checkers, CheckersMove> eval = new JustEvaluator<Checkers, CheckersMove>(trainer.NeuralNetEval, minMaxEvaluator);
@@ -257,7 +273,7 @@ namespace NeuralNetTreeStuffViewer
                 var chessTrainer = new NeuralNetGameTrainer<Chess, ChessMove>(backProp, null, path);
                 //iTrainer = chessTrainer;
 
-                var monteCarloEvaluator = new MonteCarloEvaluator<Chess, ChessMove>(MonteCarloTree<Chess, ChessMove>.UTCSelection,
+                var monteCarloEvaluator = new MonteCarloEvaluator<Chess, ChessMove>(MonteCarloTree.UTCSelection,
                  Math.Sqrt(2), chessTrainer.NetChooseMoveWithValue, 0, 8, new Chess(), maxDepth, true, .0002f);
                 //MinMaxEvaluator<Chess, ChessMove> minMaxEvaluator = new MinMaxEvaluator<Chess, ChessMove>(new Chess(), null, 0, null);
                 //IEvaluateableTurnBasedGame<Chess, ChessMove> eval = new JustEvaluator<Chess, ChessMove>(trainer.NeuralNetEval, minMaxEvaluator);
@@ -273,7 +289,9 @@ namespace NeuralNetTreeStuffViewer
                     chessTrainer.PruneInputOutputs(maxOut);
                     chessTrainer.StoreInputOutputs(path);
 
+                    //put prune in train neural net
                     chessTrainer.TrainNeuralNet(10000, .0002f, 0.01f, 0, 1, 0, maxOut, true, false, netPath, 0.8f, 3, .5f);
+
                 });
             }
             else if (false)
@@ -377,6 +395,7 @@ namespace NeuralNetTreeStuffViewer
         private void playWithNetButton_Click(object sender, EventArgs e)
         {
             NavigationInfo.Game = namesOfGames[gamesComboBox.Text].game;
+            NavigationInfo.NameOfGame = gamesComboBox.Text;
             NavigationInfo.NextForm = new GameForm();
             if (SetNavigationInfo())
             {
@@ -391,6 +410,7 @@ namespace NeuralNetTreeStuffViewer
         private void playWith2PlayerButton_Click(object sender, EventArgs e)
         {
             NavigationInfo.Game = namesOfGames[gamesComboBox.Text].game;
+            NavigationInfo.NameOfGame = gamesComboBox.Text;
             NavigationInfo.Net = null;
             GameForm m = new GameForm();
             m.Show();
@@ -434,18 +454,18 @@ namespace NeuralNetTreeStuffViewer
             trainingDataTextBox.Text = file;
         }
 
-        private void generateDataButton_Click(object sender, EventArgs e)
+        private void generateInputDataButton_Click(object sender, EventArgs e)
         {
             NavigationInfo.Game = namesOfGames[gamesComboBox.Text].game;
+            NavigationInfo.NameOfGame = gamesComboBox.Text;
             if (SetNavigationInfo())
             {
                 if (SetTrainer())
                 {
-                    TrainingSettingsForm m = new TrainingSettingsForm();
+                    TrainingInputsSettingsForm m = new TrainingInputsSettingsForm();
                     m.Show();
                     Hide();
                 }
-
             }
         }
 
@@ -456,6 +476,7 @@ namespace NeuralNetTreeStuffViewer
                 if (neuralNetTextBox.Text == "")
                 {
                     NavigationInfo.Net = new NeuralNetwork(new TanH(-1, 1), Funcs.Random.NextDouble, namesOfGames[gamesComboBox.Text].layers);
+                    NavigationInfo.NetPath = null;
                 }
                 else
                 {
@@ -472,10 +493,12 @@ namespace NeuralNetTreeStuffViewer
                         return false;
                     }
                     NavigationInfo.Net = net;
+                    NavigationInfo.NetPath = neuralNetTextBox.Text;
                 }
             }
             if (NavigationInfo.Net.Layers[0].Neurons.Length != NavigationInfo.Game.GetInputs(Players.YouOrFirst).Length)
             {
+                NavigationInfo.NetPath = null;
                 NavigationInfo.Net = null;
                 neuralNetTextBox.Text = "";
                 return false;
@@ -490,16 +513,48 @@ namespace NeuralNetTreeStuffViewer
                             new Type[] { typeof(Backpropagation), typeof(Backpropagation), typeof(string) })
                             .Invoke(new object[] { new Backpropagation(NavigationInfo.Net), null, trainingDataTextBox.Text == "" ? null : trainingDataTextBox.Text });
             int inputAmount = namesOfGames[gamesComboBox.Text].layers[0];
-            if ((trainer.LoadedFromFile || trainingDataTextBox.Text == "") && trainer.GetNetInputs() == inputAmount)
+            if ((trainer.LoadedFromFile || trainingDataTextBox.Text == "") && (trainer.InputOutputCount == 0 || trainer.GetNetInputs() == inputAmount))
             {
                 NavigationInfo.Trainer = trainer;
+                NavigationInfo.TrainingDataPath = trainingDataTextBox.Text == "" ? null : trainingDataTextBox.Text;
                 return true;
             }
             else
             {
+                NavigationInfo.TrainingDataPath = null;
                 NavigationInfo.Trainer = null;
                 trainingDataTextBox.Text = "";
                 return false;
+            }
+        }
+
+        private void generateOutputDataButton_Click(object sender, EventArgs e)
+        {
+            NavigationInfo.Game = namesOfGames[gamesComboBox.Text].game;
+            NavigationInfo.NameOfGame = gamesComboBox.Text;
+            if (SetNavigationInfo())
+            {
+                if (SetTrainer())
+                {
+                    TrainingOutputSettingsForm m = new TrainingOutputSettingsForm();
+                    m.Show();
+                    Hide();
+                }
+            }
+        }
+
+        private void trainNeuralNetButton_Click(object sender, EventArgs e)
+        {
+            NavigationInfo.Game = namesOfGames[gamesComboBox.Text].game;
+            NavigationInfo.NameOfGame = gamesComboBox.Text;
+            if (SetNavigationInfo())
+            {
+                if (SetTrainer())
+                {
+                    TrainNeuralNetForm m = new TrainNeuralNetForm();
+                    m.Show();
+                    Hide();
+                }
             }
         }
     }

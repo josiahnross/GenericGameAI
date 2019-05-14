@@ -150,6 +150,7 @@ namespace NeuralNetTreeStuffViewer
             ChessPiece piece = board[move.Move.InitPosition];
             ChessMove genMove = move.Move;
             genMove.InitPosition = new BoardPosition(-1, -1);
+            genMove.TurnIntoQueenNotKnight = false;
             var moveInfo = pieceRanges[piece.Piece].Moves[genMove];
             BoardPosition change = moveInfo.PositionChange;
             if (move.Player == Players.OpponentOrSecond)
@@ -908,6 +909,7 @@ namespace NeuralNetTreeStuffViewer
                 ChessPieces piece = board[move.Move.InitPosition].Piece;
                 ChessMove genericMove = move.Move;
                 genericMove.InitPosition = new BoardPosition(-1, -1);
+                genericMove.TurnIntoQueenNotKnight = false;
                 if (pieceRanges[piece].Moves.ContainsKey(genericMove))
                 {
                     var moveInfo = pieceRanges[piece].Moves[genericMove];

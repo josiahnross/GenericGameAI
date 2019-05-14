@@ -7,17 +7,58 @@ using System.Threading.Tasks;
 
 namespace NeuralNetTreeStuffViewer
 {
-    public class MonteCarloTree<T, T1> where T : ITurnBasedGame<T, T1>,new()
+    public class MonteCarloTree
+    {
+        public static double UTCSelection(IMonteCarloNode node, bool player1Perspective, double explotationParam)
+        {
+            double amountOfWins = node.GameInfo.Player1Wins;
+            double amountOfGames = node.GameInfo.Player1AmountOfGames;
+            double parentAmountOfGames = node.UnGenParent.GameInfo.Player1AmountOfGames;
+            if (!player1Perspective)
+            {
+                amountOfWins = node.GameInfo.Player2Wins;
+                amountOfGames = node.GameInfo.Player2AmountOfGames;
+                parentAmountOfGames = node.UnGenParent.GameInfo.Player2AmountOfGames;
+            }
+            if (amountOfGames == 0)
+            {
+                return double.MaxValue;
+            }
+
+            return (amountOfWins / amountOfGames) + (explotationParam * Math.Sqrt(Math.Log(parentAmountOfGames) / amountOfGames));
+        }
+        public ITurnBasedGame game;
+        public Func<IMonteCarloNode, bool, double, double> selectionFunction;
+        public double explorationParam;
+        //public Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc;
+        public int maxDepth;
+        public Players startPlayer;
+        public MonteCarloTree(ITurnBasedGame game, Func<IMonteCarloNode, bool, double, double> selectionFunction, double explorationParam, int maxDepth, Players startPlayer)
+        {
+            this.game = game;
+            this.selectionFunction = selectionFunction;
+            this.explorationParam = explorationParam;
+            this.maxDepth = maxDepth;
+            this.startPlayer = startPlayer;
+        }
+    }
+    public class MonteCarloTree<T, T1> where T : ITurnBasedGame<T, T1>, new()
         where T1 : struct
     {
         public bool Stop = false;
         //List<MonteCarloNode<T, T1>> allNodes;
         public MonteCarloNode<T, T1> Root { get; private set; }
-        Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction;
+        public Func<IMonteCarloNode, bool, double, double> selectionFunction { get; private set; }
         public double ExplorationParam { get; }
-        Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc;
+        public Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc { get; private set; }
         public int MaxDepth { get; }
-        public MonteCarloTree(ITurnBasedGame<T, T1> game, Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam,
+        public MonteCarloTree(MonteCarloTree tree, Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc)
+            : this((ITurnBasedGame<T, T1>)tree.game, tree.selectionFunction, tree.explorationParam, chooseMoveFunc, tree.maxDepth, tree.startPlayer)
+        {
+
+        }
+
+        public MonteCarloTree(ITurnBasedGame<T, T1> game, Func<IMonteCarloNode, bool, double, double> selectionFunction, double explorationParam,
             Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc, int maxDepth, Players startPlayer)
         {
             this.chooseMoveFunc = chooseMoveFunc;
@@ -28,6 +69,9 @@ namespace NeuralNetTreeStuffViewer
             //allNodes = new List<MonteCarloNode<T, T1>>();
             //allNodes.Add(Root);
         }
+
+
+
         public void RunMonteCarloSims(int amountOfSims, bool checkForLoops, bool bothPerspectives, bool firstPerspective, MonteCarloNode<T, T1> startNode = null, HashSet<MonteCarloNode<T, T1>> nodesSet = null)
         {
             if (startNode == null)
@@ -42,7 +86,8 @@ namespace NeuralNetTreeStuffViewer
             for (int i = 0; i < amountOfSims; i++)
             {
                 RunMonteCarloSim(startNode, player1Perspective, nodesSet, checkForLoops);
-                if(Stop)
+                Console.WriteLine("Finished Sim");
+                if (Stop)
                 {
                     return;
                 }
@@ -52,7 +97,7 @@ namespace NeuralNetTreeStuffViewer
                 }
             }
         }
-        
+
         private void RunMonteCarloSim(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet, bool checkForLoops)
         {
             var newNode = Selection(node, player1Perspective);
@@ -127,7 +172,7 @@ namespace NeuralNetTreeStuffViewer
                     {
                         node.FullyExplored = true;
                         node.AvailableMoves.Clear();
-                        Backprop(node, new NodeGameInfo(0, 0, 0, 0, 0,0));
+                        Backprop(node, new NodeGameInfo(0, 0, 0, 0, 0, 0));
                     }
                     return null;
                 }
@@ -190,15 +235,15 @@ namespace NeuralNetTreeStuffViewer
             if (!node.FullyExplored)
             {
                 node.FullyExplored = true;
-                Backprop(node, new NodeGameInfo(0, 0, 0, 0,0,0));
+                Backprop(node, new NodeGameInfo(0, 0, 0, 0, 0, 0));
             }
             return null;
         }
         private NodeGameInfo SimulationAndPartialBackprop(MonteCarloNode<T, T1> node, bool player1Perspective, HashSet<MonteCarloNode<T, T1>> nodesSet, bool checkForLoops)
         {
-            if(Stop)
+            if (Stop)
             {
-                return new NodeGameInfo(0, 0, 0, 0, 0,0);
+                return new NodeGameInfo(0, 0, 0, 0, 0, 0);
             }
             Players player = node.Player;
             if (node.AvailableMoves.Count > 0)
@@ -230,13 +275,13 @@ namespace NeuralNetTreeStuffViewer
                     child = node.Children[move.key];
                     state = child.CurrentState;
                 }
-                BoardState boardState = state.CheckBoardState(gameMove,true);
+                BoardState boardState = state.CheckBoardState(gameMove, true);
                 if (boardState == BoardState.Continue && child.TotalAvialableMovesCount != 0 && child.Depth < MaxDepth)
                 {
                     if (node.Parent == null || !checkForLoops || !IsLoop(child, node.Parent))
                     {
                         NodeGameInfo childGameInfo = SimulationAndPartialBackprop(child, player1Perspective, nodesSet, checkForLoops);
-                        if(Stop)
+                        if (Stop)
                         {
                             return childGameInfo;
                         }
@@ -272,7 +317,7 @@ namespace NeuralNetTreeStuffViewer
             {
                 node.EndOfGame = true;
                 node.FullyExplored = true;
-                
+
                 var info = GetGameInfo(BoardState.Continue, player1Perspective, node.Depth);
                 node.GameInfo += info;
                 if (node.Parent != null)
@@ -288,7 +333,7 @@ namespace NeuralNetTreeStuffViewer
             }
             //else
             //{
-            
+
             //}
         }
 
@@ -307,7 +352,7 @@ namespace NeuralNetTreeStuffViewer
 
         private NodeGameInfo GetGameInfo(BoardState boardState, bool player1Perspective, int depth)
         {
-            NodeGameInfo info = new NodeGameInfo(0, 0, 0, 0,0,0);
+            NodeGameInfo info = new NodeGameInfo(0, 0, 0, 0, 0, 0);
             if (boardState != BoardState.IllegalMove)
             {
                 if (player1Perspective)
@@ -349,24 +394,7 @@ namespace NeuralNetTreeStuffViewer
             }
         }
 
-        public static double UTCSelection(MonteCarloNode<T, T1> node, bool player1Perspective, double explotationParam)
-        {
-            double amountOfWins = node.GameInfo.Player1Wins;
-            double amountOfGames = node.GameInfo.Player1AmountOfGames;
-            double parentAmountOfGames = node.Parent.GameInfo.Player1AmountOfGames;
-            if (!player1Perspective)
-            {
-                amountOfWins = node.GameInfo.Player2Wins;
-                amountOfGames = node.GameInfo.Player2AmountOfGames;
-                parentAmountOfGames = node.Parent.GameInfo.Player2AmountOfGames;
-            }
-            if (amountOfGames == 0)
-            {
-                return double.MaxValue;
-            }
-
-            return (amountOfWins / amountOfGames) + (explotationParam * Math.Sqrt(Math.Log(parentAmountOfGames) / amountOfGames));
-        }
+        
 
         public static Players GetOtherPlayer(Players player)
         {

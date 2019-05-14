@@ -14,6 +14,7 @@ namespace NeuralNetTreeStuffViewer
 {
     public interface ITrainer
     {
+        int InputOutputCount { get; }
         bool LoadedFromFile { get; }
         bool Parallel { get; set; }
         bool CurrentlyParallel { get; }
@@ -25,11 +26,14 @@ namespace NeuralNetTreeStuffViewer
         void WipeOutputs();
         void Stop();
         int GetNetInputs();
+        void GetTrainingOutputs(IEvaluateableTurnBasedGame evaluator, int writeRemainingAamount = -1, string path = null, int parallelBatchAmount = 100);
+        void GetTrainingInputs(ITurnBasedGame game, int amountOfSims, int maxDepth, ChooseMoveEvaluators chooseMoveEvaluator, bool removeDraws, Players startPlayer = Players.YouOrFirst);
     }
     public class NeuralNetGameTrainer<T, T1> : ITrainer
         where T : ITurnBasedGame<T, T1>, new()
         where T1 : struct
     {
+        public int InputOutputCount { get { return inputOutputs == null ? 0 : inputOutputs.Count; } }
         public bool Parallel { get; set; }
         public bool CurrentlyParallel { get; private set; }
         public bool LoadedFromFile { get; private set; }
@@ -128,7 +132,7 @@ namespace NeuralNetTreeStuffViewer
                     }
                     if (Funcs.Random.NextDouble() <= testDataPercent)
                     {
-                        if (output[0] == 0 && ignoreZeroRate > 0 && Funcs.Random.NextDouble() > ignoreZeroRate)
+                        if (output[0] != 0 ||(ignoreZeroRate > 0 && Funcs.Random.NextDouble() > ignoreZeroRate))
                         {
                             inputsL.Add(input);
                             outputsL.Add(output);
@@ -240,8 +244,9 @@ namespace NeuralNetTreeStuffViewer
                 }
             }
         }
-        public void GetTrainingOutputs(IEvaluateableTurnBasedGame<T, T1> evaluator, int writeRemainingAamount = -1, string path = null, int parallelBatchAmount = 100)
+        public void GetTrainingOutputs(IEvaluateableTurnBasedGame evaluator, int writeRemainingAamount = -1, string path = null, int parallelBatchAmount = 100)
         {
+            IEvaluateableTurnBasedGame<T, T1> actualEvalutator = evaluator.Cast<T, T1>();
             int count = 0;
             int realCount = 0;
 
@@ -255,7 +260,7 @@ namespace NeuralNetTreeStuffViewer
                     CurrentlyParallel = true;
                     System.Threading.Tasks.Parallel.For(0, amount, (i, state) =>
                     {
-                        if (InsideLoop(i, j, true, evaluator, ref count, ref realCount, writeRemainingAamount))
+                        if (InsideLoop(i, j, true, actualEvalutator, ref count, ref realCount, writeRemainingAamount))
                         {
                             state.Break();
                         }
@@ -267,7 +272,7 @@ namespace NeuralNetTreeStuffViewer
                     CurrentlyParallel = false;
                     for (int i = 0; i < amount; i++)
                     {
-                        InsideLoop(i, j, false, evaluator, ref count, ref realCount, writeRemainingAamount);
+                        InsideLoop(i, j, false, actualEvalutator, ref count, ref realCount, writeRemainingAamount);
                         if (Parallel)
                         {
                             break;
@@ -376,8 +381,9 @@ namespace NeuralNetTreeStuffViewer
             }
         }
 
-        public void GetTrainingInputs(ITurnBasedGame<T, T1> game, int amountOfSims, int maxDepth, ChooseMoveEvaluators chooseMoveEvaluator, bool removeDraws, Players startPlayer = Players.YouOrFirst)
+        public void GetTrainingInputs(ITurnBasedGame game, int amountOfSims, int maxDepth, ChooseMoveEvaluators chooseMoveEvaluator, bool removeDraws, Players startPlayer = Players.YouOrFirst)
         {
+            ITurnBasedGame<T, T1> actualGame = (ITurnBasedGame<T,T1>)game;
             if (inputOutputs.Count == 0)
             {
                 Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc = null;
@@ -393,7 +399,7 @@ namespace NeuralNetTreeStuffViewer
                 {
                     chooseMoveFunc = NetChooseMoveWithWeightedValue;
                 }
-                MonteCarloTree<T, T1> tree = new MonteCarloTree<T, T1>(game, MonteCarloTree<T, T1>.UTCSelection, Math.Sqrt(2), chooseMoveFunc, maxDepth, startPlayer);
+                MonteCarloTree<T, T1> tree = new MonteCarloTree<T, T1>(actualGame, MonteCarloTree.UTCSelection, Math.Sqrt(2), chooseMoveFunc, maxDepth, startPlayer);
                 HashSet<MonteCarloNode<T, T1>> nodes = new HashSet<MonteCarloNode<T, T1>>();
                 tree.RunMonteCarloSims(amountOfSims, true, true, true, tree.Root, nodes);
                 foreach (var n in nodes)
@@ -417,7 +423,7 @@ namespace NeuralNetTreeStuffViewer
             {
                 mtcEvalFunc = NetChooseMoveWithPolicy;
             }
-            var monteCarloEvaluator = new MonteCarloEvaluator<T, T1>(MonteCarloTree<T, T1>.UTCSelection,
+            var monteCarloEvaluator = new MonteCarloEvaluator<T, T1>(MonteCarloTree.UTCSelection,
                    Math.Sqrt(2), mtcEvalFunc, 0, 25, game, maxDepth, true);//
             MinMaxEvaluator<T, T1> evaluator = new MinMaxEvaluator<T, T1>(game.Copy(), monteCarloEvaluator, 2, null);
 
