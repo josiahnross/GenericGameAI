@@ -45,19 +45,28 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
         public void ApplyAndClearWeightUpdates()
         {
             Delta = 0;
-            for(int i = 0; i < Dendrites.Count; i++)
+            for (int i = 0; i < Dendrites.Count; i++)
             {
                 Dendrites[i].Weight += Dendrites[i].WeightUpdate;
                 Dendrites[i].WeightUpdate = 0;
             }
         }
 
-        public double Compute()
+        public double Compute(double[] inputs)
         {
             double input = 0;
             for (int i = 0; i < Dendrites.Count; i++)
             {
-                input += Dendrites[i].ComputeNextInput();
+                double v;
+                if (i < inputs.Length)
+                {
+                    v = Dendrites[i].ComputeNextInput(inputs[i]);
+                }
+                else
+                {
+                    v = Dendrites[i].ComputeNextInput(1);
+                }
+                input += v;
             }
             Input = input;
             Output = ActivationFunction.Function(input);

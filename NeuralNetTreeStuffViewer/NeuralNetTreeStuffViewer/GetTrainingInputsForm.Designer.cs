@@ -1,6 +1,6 @@
 ﻿namespace NeuralNetTreeStuffViewer
 {
-    partial class TrainingSettingsForm
+    partial class GetTrainingInputsForm
     {
         /// <summary>
         /// Required designer variable.
@@ -30,14 +30,14 @@
         {
             this.SuspendLayout();
             // 
-            // TrainingSettingsForm
+            // GetTrainingInputsForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 450);
-            this.Name = "TrainingSettingsForm";
-            this.Text = "TrainingSettingsForm";
-            this.Load += new System.EventHandler(this.TrainingSettingsForm_Load);
+            this.ClientSize = new System.Drawing.Size(285, 191);
+            this.Name = "GetTrainingInputsForm";
+            this.Text = "GetTrainingInputsForm";
+            this.Load += new System.EventHandler(this.GetTrainingInputsForm_Load);
             this.ResumeLayout(false);
 
         }

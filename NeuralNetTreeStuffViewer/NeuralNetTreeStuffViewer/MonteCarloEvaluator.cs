@@ -13,7 +13,7 @@ namespace NeuralNetTreeStuffViewer
         MonteCarloTree<T, T1> tree;
         MonteCarloTree<T, T1> tempTree = null;
         public MonteCarloNode<T, T1> CurrentNode;
-        Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction;
+        Func<IMonteCarloNode, bool, double, double> selectionFunction;
         Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc;
         double explorationParam;
         int startSimulations;
@@ -37,12 +37,26 @@ namespace NeuralNetTreeStuffViewer
             CurrentNode = other.CurrentNode;
             DepthMultiplier = other.DepthMultiplier;
         }
-
+        public static Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> GetChooseMoveFunc(ChooseMoveEvaluators evaluator, ITrainer trainer)
+        {
+            NeuralNetGameTrainer<T, T1> actualTrainer = (NeuralNetGameTrainer<T, T1>)trainer;
+            switch (evaluator)
+            {
+                case (ChooseMoveEvaluators.NeuarlNet):
+                    return actualTrainer.NetChooseMoveWithValue;
+                default:
+                    return NeuralNetGameTrainer<T, T1>.RandomChooseMove;
+            }
+        }
         public IEvaluateableTurnBasedGame<T, T1> CopyEInterface(bool copyEval = true)
         {
             return new MonteCarloEvaluator<T, T1>(this);
         }
-        public MonteCarloEvaluator(Func<MonteCarloNode<T, T1>, bool, double, double> selectionFunction, double explorationParam,
+        public MonteCarloEvaluator(MonteCarloTree monteCarloTree, object chooseMoveFunc, int startSimulations, int simulationsPerTurn, bool checkForLoops, double depthMultiplier, Players startPlayer)
+            :this(monteCarloTree.selectionFunction, monteCarloTree.explorationParam, (Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> )chooseMoveFunc, startSimulations, simulationsPerTurn, (ITurnBasedGame<T,T1>)monteCarloTree.game, monteCarloTree.maxDepth,checkForLoops, depthMultiplier, startPlayer)
+        {
+        }
+        public MonteCarloEvaluator(Func<IMonteCarloNode, bool, double, double> selectionFunction, double explorationParam,
             Func<ITurnBasedGame<T, T1>, Dictionary<int, T1>, Players, (int key, ITurnBasedGame<T, T1> newBoardState)> chooseMoveFunc, int startSimulations, int simulationsPerTurn,
             ITurnBasedGame<T, T1> game, int maxDepth, bool checkForLoops, double depthMultiplier = 0, Players startPlayer = Players.YouOrFirst)
         {

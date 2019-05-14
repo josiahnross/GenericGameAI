@@ -80,11 +80,17 @@
     <Compile Include="GameSettingsForm.Designer.cs">
       <DependentUpon>GameSettingsForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="GetDataForm.cs">
+    <Compile Include="GetTrainingInputsForm.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="GetDataForm.Designer.cs">
-      <DependentUpon>GetDataForm.cs</DependentUpon>
+    <Compile Include="GetTrainingInputsForm.Designer.cs">
+      <DependentUpon>GetTrainingInputsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="GetTrainingOutputsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GetTrainingOutputsForm.Designer.cs">
+      <DependentUpon>GetTrainingOutputsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="IEvaluateableTurnBasedGame.cs" />
     <Compile Include="ITurnBasedGame.cs" />
@@ -113,6 +119,24 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TickTacToe.cs" />
+    <Compile Include="TrainingInputsSettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TrainingInputsSettingsForm.Designer.cs">
+      <DependentUpon>TrainingInputsSettingsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TrainingOutputSettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TrainingOutputSettingsForm.Designer.cs">
+      <DependentUpon>TrainingOutputSettingsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TrainNeuralNetForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="TrainNeuralNetForm.Designer.cs">
+      <DependentUpon>TrainNeuralNetForm.cs</DependentUpon>
+    </Compile>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.cs</DependentUpon>
     </EmbeddedResource>
@@ -122,8 +146,11 @@
     <EmbeddedResource Include="GameSettingsForm.resx">
       <DependentUpon>GameSettingsForm.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="GetDataForm.resx">
-      <DependentUpon>GetDataForm.cs</DependentUpon>
+    <EmbeddedResource Include="GetTrainingInputsForm.resx">
+      <DependentUpon>GetTrainingInputsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GetTrainingOutputsForm.resx">
+      <DependentUpon>GetTrainingOutputsForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -135,6 +162,15 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <EmbeddedResource Include="TrainingInputsSettingsForm.resx">
+      <DependentUpon>TrainingInputsSettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TrainingOutputSettingsForm.resx">
+      <DependentUpon>TrainingOutputSettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="TrainNeuralNetForm.resx">
+      <DependentUpon>TrainNeuralNetForm.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>

@@ -23,12 +23,12 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
         public Layer(int neuronCount, Layer previousLayer, ActivationFunction activationFunction, Func<double, double, double> Random, Neuron biasNeuron)
         {
             Neurons = new Neuron[neuronCount];
-            for(int i = 0; i< Neurons.Length; i++)
+            for (int i = 0; i < Neurons.Length; i++)
             {
                 Neurons[i] = new Neuron(activationFunction);
-                if(previousLayer != null)
+                if (previousLayer != null)
                 {
-                    for(int j = 0; j < previousLayer.Neurons.Length; j++)
+                    for (int j = 0; j < previousLayer.Neurons.Length; j++)
                     {
                         Neurons[i].Dendrites.Add(new Dendrite(Random(activationFunction.Min, activationFunction.Max), previousLayer[j]));
                     }
@@ -39,18 +39,18 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
 
         public void SetOutputs(double[] outputs)
         {
-            for(int i = 0; i < Neurons.Length; i++)
+            for (int i = 0; i < Neurons.Length; i++)
             {
                 Neurons[i].Output = outputs[i];
             }
         }
 
-        public double[] Compute()
+        public double[] Compute(double[] input)
         {
             double[] output = new double[Neurons.Length];
             for (int i = 0; i < Neurons.Length; i++)
             {
-                output[i] = Neurons[i].Compute();
+                output[i] = Neurons[i].Compute(input);
             }
             return output;
         }

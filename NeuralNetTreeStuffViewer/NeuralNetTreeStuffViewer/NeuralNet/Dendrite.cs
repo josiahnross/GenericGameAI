@@ -21,9 +21,9 @@ namespace NeuralNetTreeStuffViewer.NeuralNet
             Previous = previous;
             WeightUpdate = 0;
         }
-        public double ComputeNextInput()
+        public double ComputeNextInput(double previousOutput)
         {
-            return Previous.Output * Weight;
+            return previousOutput * Weight;
         }
     }
 }
